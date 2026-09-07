@@ -1,0 +1,41 @@
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  application:
+    name: challenge-platform
+  datasource:
+    # No credentials in this file. Values come from .env locally (git-ignored)
+    # and from real environment variables on AWS. See .env.example.
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate          # schema is owned by db/01_schema.sql, never by Hibernate
+    properties:
+      hibernate:
+        default_schema: challenge_platform
+        format_sql: false
+    show-sql: false
+    open-in-view: false
+
+challenge:
+  # Judge0 endpoint used to run and grade submissions.
+  judge:
+    base-url: ${JUDGE_BASE_URL:https://judge.codereport.com}
+    timeout-seconds: 120
+    # Per-test-case CPU seconds. Optimal solutions finish well inside this;
+    # quadratic ones exceed it on the large test cases and score zero for them.
+    cpu-time-limit-seconds: ${JUDGE_CPU_TIME_LIMIT:1.0}
+  # Salt for hashing email/phone in daily_attempt_lock. Override per environment.
+  identity-salt: ${IDENTITY_SALT}
+  # One attempt per identity per day.
+  daily-attempt-limit: 1
+  # Share of a question's points awarded for speed (0.20 = up to 20%).
+  speed-bonus-ratio: 0.20
+
+logging:
+  level:
+    com.qfion.challenge: DEBUG
