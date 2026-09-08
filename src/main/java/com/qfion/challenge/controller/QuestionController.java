@@ -5,6 +5,8 @@ import com.qfion.challenge.entity.Question;
 import com.qfion.challenge.repo.QuestionRepo;
 import com.qfion.challenge.repo.TestcaseRepo;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +21,12 @@ public class QuestionController {
     private final TestcaseRepo testcaseRepo;
 
     @GetMapping
-    public List<Dto.QuestionSummary> active() {
-        return questionRepo.findByIsActiveTrueOrderByIdAsc().stream()
-                .map(q -> new Dto.QuestionSummary(q.getId(), q.getSlug(), q.getTitle(),
-                        q.getDifficulty(), q.getLanguage(), q.getTimeLimitSeconds()))
-                .toList();
+    @Operation(summary = "Get one random active question", description = "Returns the complete public question, including starter code and sample test cases, in one object. Returns 404 if no questions are active. Hidden test cases and the reference solution are never returned.")
+    public ResponseEntity<Dto.QuestionDetail> active() {
+        return questionRepo.findRandomActive()
+                .map(this::toDetail)
+                .map(question -> ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(question))
+                .orElseGet(() -> ResponseEntity.notFound().cacheControl(CacheControl.noStore()).build());
     }
 
     @GetMapping("/{slug}")

@@ -26,7 +26,32 @@ class PublicResponseTest {
         MockMvcBuilders.standaloneSetup(new LeaderboardController(repo)).build()
                 .perform(get("/api/v1/leaderboard"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[{\"rank\":7,\"displayName\":\"Test Candidate\"}]", true));
+                .andExpect(content().json("[{\"rank\":7,\"displayName\":\"Test C.\"}]", true));
+    }
+
+    @Test
+    void leaderboardAbbreviatesSurnamesAndHandlesNameVariants() throws Exception {
+        LeaderboardRepo repo = mock(LeaderboardRepo.class);
+        when(repo.topCandidates(50)).thenReturn(java.util.Arrays.asList(
+                new Object[] { 1L, "Akshat Verma" },
+                new Object[] { 2L, "  Mary   Jane Watson  " },
+                new Object[] { 3L, "Prince" },
+                new Object[] { 4L, "Anne-Marie\u00a0éclair" },
+                new Object[] { 5L, null },
+                new Object[] { 6L, "  " },
+                new Object[] { 7L, "Akshat V." }));
+        MockMvcBuilders.standaloneSetup(new LeaderboardController(repo)).build()
+                .perform(get("/api/v1/leaderboard"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        [{"rank":1,"displayName":"Akshat V."},
+                         {"rank":2,"displayName":"Mary W."},
+                         {"rank":3,"displayName":"Prince"},
+                         {"rank":4,"displayName":"Anne-Marie É."},
+                         {"rank":5,"displayName":"Anonymous"},
+                         {"rank":6,"displayName":"Anonymous"},
+                         {"rank":7,"displayName":"Akshat V."}]
+                        """, true));
     }
 
     @Test

@@ -56,7 +56,7 @@ docker build -t challenge-platform-backend .
 
 ## API
 
-- `GET /api/v1/questions`
+- `GET /api/v1/questions` — returns one randomly selected active question as a complete public detail object (prompt, starter code, and sample test cases), so no follow-up request is needed. Returns 404 if none are active. Selection happens in PostgreSQL; the response uses `Cache-Control: no-store`. Hidden test cases and reference solutions remain private.
 - `GET /api/v1/questions/{slug}`
 - `POST /api/v1/run`
 - `POST /api/v1/submit`
