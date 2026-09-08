@@ -31,12 +31,8 @@ public final class Dto {
             Long durationMs,
             String sourceCampaign) {}
 
-    public record TestcaseOutcome(int ordinal, boolean passed, String status, Integer execTimeMs) {}
+    /** Candidate-facing acknowledgement; grading data remains in the database. */
+    public record SubmitResponse(String message) {}
 
-    public record SubmitResponse(Long attemptId, int testcasesPassed, int testcasesTotal,
-                                 double score, double speedBonus, Long durationMs,
-                                 List<TestcaseOutcome> results) {}
-
-    public record LeaderboardRow(long rank, String displayName, double totalScore,
-                                 long testcasesCleared, long questionsSolved, Long totalTimeMs) {}
+    public record LeaderboardRow(long rank, String displayName) {}
 }

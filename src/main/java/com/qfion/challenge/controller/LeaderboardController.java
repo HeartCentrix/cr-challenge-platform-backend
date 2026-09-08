@@ -21,12 +21,8 @@ public class LeaderboardController {
         List<Dto.LeaderboardRow> rows = new ArrayList<>();
         for (Object[] r : leaderboardRepo.topCandidates(Math.min(limit, 200))) {
             rows.add(new Dto.LeaderboardRow(
-                    num(r[6]).longValue(),
-                    (String) r[1],
-                    num(r[2]).doubleValue(),
-                    num(r[3]).longValue(),
-                    num(r[4]).longValue(),
-                    r[5] == null ? null : num(r[5]).longValue()));
+                    num(r[0]).longValue(),
+                    (String) r[1]));
         }
         return rows;
     }

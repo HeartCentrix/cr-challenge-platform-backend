@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -104,7 +103,6 @@ public class SubmissionService {
         int passed = 0;
         BigDecimal basePoints = BigDecimal.ZERO;
         String lastStatus = null;
-        List<Dto.TestcaseOutcome> outcomes = new ArrayList<>();
 
         for (Testcase tc : testcases) {
             Judge0Client.Execution ex = judge.execute(req.sourceCode(), q.getJudgeLanguageId(),
@@ -124,7 +122,6 @@ public class SubmissionService {
                     .memoryKb(ex.memoryKb())
                     .stdoutText(ex.stdout())
                     .build());
-            outcomes.add(new Dto.TestcaseOutcome(tc.getOrdinal(), ok, ex.statusDescription(), ex.execTimeMs()));
         }
 
         BigDecimal bonus = speedBonus(basePoints, req.durationMs(), q.getTimeLimitSeconds());
@@ -143,8 +140,7 @@ public class SubmissionService {
         log.info("Attempt {} by candidate {} on {}: {}/{} test cases, score {}",
                 attempt.getId(), candidate.getId(), q.getSlug(), passed, testcases.size(), total);
 
-        return new Dto.SubmitResponse(attempt.getId(), passed, testcases.size(),
-                total.doubleValue(), bonus.doubleValue(), req.durationMs(), outcomes);
+        return new Dto.SubmitResponse("Your submission has been saved.");
     }
 
     private DailyAttemptLock lock(String type, String hash, LocalDate date, Long candidateId, Long attemptId) {

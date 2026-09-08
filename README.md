@@ -63,6 +63,10 @@ docker build -t challenge-platform-backend .
 - `GET /api/v1/leaderboard`
 - `GET /api/v1/stats`
 
+The public leaderboard returns only `rank` and `displayName`. Successful submissions
+return only a confirmation `message`; scores, timings, and grading results are stored
+internally in PostgreSQL and are not included in candidate-facing responses.
+
 Swagger uses same-origin, relative server URLs, so it works locally and behind the AWS
 reverse proxy without storing infrastructure addresses or credentials in the codebase.
 
