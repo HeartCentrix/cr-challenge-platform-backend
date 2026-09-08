@@ -19,7 +19,7 @@ public class AppConfig implements WebMvcConfigurer {
         var cors = new CorsConfiguration();
         cors.setAllowedOrigins(java.util.List.of("https://challenge.dev.codereport.com",
                 "http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:3000"));
-        cors.setAllowedMethods(java.util.List.of("POST", "OPTIONS"));
+        cors.setAllowedMethods(java.util.List.of("GET", "POST", "OPTIONS"));
         cors.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/v1/admin/**", cors);

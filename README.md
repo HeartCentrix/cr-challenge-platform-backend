@@ -58,6 +58,61 @@ docker build -t challenge-platform-backend .
 
 - `GET /api/v1/questions` — returns one randomly selected active question as a complete public detail object (prompt, starter code, and sample test cases), so no follow-up request is needed. Returns 404 if none are active. Selection happens in PostgreSQL; the response uses `Cache-Control: no-store`. Hidden test cases and reference solutions remain private.
 - `GET /api/v1/questions/{slug}`
+
+### Private admin statistics
+
+The same bearer session issued by `/api/v1/admin/auth/login` protects all of:
+
+- `GET /api/v1/admin/stats`: unique candidates with saved attempts, total attempts,
+  average candidate score, and pass-rate groups aggregated over all submissions.
+- `GET /api/v1/admin/stats/candidates?bucket=all&search=&size=25`: paginated
+  candidate contact details, acquisition campaign and overall challenge summary. Search matches name,
+  email, or phone literally, case-insensitively. Bucket keys: `all`, `zero`, `low`,
+  `quarter`, `half`, `high`, `perfect`, `unavailable`.
+- `GET /api/v1/admin/stats/candidates/{id}?page=0&size=10&day=2026-09-01&timeZone=Asia/Kolkata`:
+  candidate information, performance and paginated attempt history for that local day,
+  newest first. An optional `asOf` fixes the snapshot across history/export pages.
+  Bounds are local midnight inclusive to next midnight exclusive, including DST.
+  Existing candidates with no attempts that day return an empty history and zero totals.
+  Omitting `day` preserves lifetime access for API clients; the admin UI always selects one day.
+- `GET /api/v1/admin/stats/candidates/{id}/attempts/{attemptId}`: full saved code,
+  score, duration, metadata, question/reference solution, and per-test-case results.
+  The attempt must belong to that candidate or the response is 404.
+
+Pass-rate groups are 0%, >0–25%, >25–50%, >50–75%, >75–<100%, and 100%; missing
+denominators are classified separately. Groups use unrounded ratios; displayed
+percentages are rounded to two decimal places. Group candidate shares use the
+total unique candidate count, not the submission count. Inactive questions remain
+visible in history. The question bank is not versioned; question content and test
+inputs/expected outputs reflect its current values, while code and result records
+are saved per attempt. Attempt-history pages are zero-based; maximum size is 100.
+
+Overview and candidate-list filters: `search`, `campaign` (exact case-insensitive
+acquisition tag), inclusive `startDate` / `endDate` (ISO dates), `timeZone` (IANA,
+default UTC), and inclusive `minPercent` / `maxPercent` (0–100). Dates filter
+submissions before candidate aggregation. Pass rate = sum(passed) / sum(total).
+Candidate score totals/averages include every selected submission; the headline
+average gives each candidate equal weight. No dates means all history.
+
+Candidate batches use `afterId` (the preceding response's `nextCursor`) ordered
+by descending candidate ID. Null `nextCursor` means stop, including empty results.
+Pass the same `asOf` ISO instant to the overview and every list batch to exclude
+submissions arriving after that view's snapshot. Filters are validated and bound
+SQL parameters; no candidate-submitted text is interpolated into SQL.
+
+The frontend caches authenticated GET responses in tab memory for at most one hour,
+with automatic deletion and earlier clearing on logout/admin-session expiry.
+Server responses remain `Cache-Control: no-store` to prevent browser/proxy caching.
+Public APIs are unchanged and never expose these admin aggregates.
+
+These read-only endpoints use `Cache-Control: no-store`, parameterized queries,
+and existing application-role permissions. No new DB schema migration is needed.
+Never reuse these DTOs for candidate-facing endpoints. AWS still needs the existing
+admin schema/session migrations and a provisioned admin account if not already set up.
+
+Local PostgreSQL integration tests are opt-in: set `CHALLENGE_STATS_DB_TESTS=true`
+before `mvn test`. They verify the local server/database before inserting fixtures;
+all fixture rows roll back (identity sequences may advance). Default tests need no DB.
 - `POST /api/v1/run`
 - `POST /api/v1/submit`
 - `GET /api/v1/leaderboard`
@@ -92,9 +147,9 @@ Deployment commands are defined in `buildspec.yml`; runtime secrets remain outsi
 
 ## Admin daily-limit reset (local setup)
 
-The admin page is `/reset-admin-aaron`. It supports one email or a batch of up to
+The admin page is `/reset-admin-aria`. It supports one email or a batch of up to
 100 emails, with explicit confirmation. Unauthenticated visitors go to
-`/reset-admin-aaron/login`. The login API verifies the admin email/password and
+`/reset-admin-aria/login`. The login API verifies the admin email/password and
 issues a random 30-minute bearer session. Only a SHA-256 token hash is stored in
 `challenge_platform_admin.admin_session`; the browser keeps the opaque token in
 session storage for the current tab/environment, never the password. Each admin
