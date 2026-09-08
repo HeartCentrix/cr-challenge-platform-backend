@@ -89,3 +89,45 @@ Pushes to `dev` trigger the non-production pipeline:
 4. Deploy the image to the non-production ECS service.
 
 Deployment commands are defined in `buildspec.yml`; runtime secrets remain outside Git.
+
+## Admin daily-limit reset (local setup)
+
+The admin page is `/reset-admin-aaron`. It supports one email or a batch of up to
+100 emails, with explicit confirmation. Unauthenticated visitors go to
+`/reset-admin-aaron/login`. The login API verifies the admin email/password and
+issues a random 30-minute bearer session. Only a SHA-256 token hash is stored in
+`challenge_platform_admin.admin_session`; the browser keeps the opaque token in
+session storage for the current tab/environment, never the password. Each admin
+request checks server expiry and account enabled status. Logout revokes the token.
+
+Run these SQL files as the local database owner, in order:
+
+```powershell
+psql -h 127.0.0.1 -U postgres -d challenge_platform -v ON_ERROR_STOP=1 -f db/04_admin_schema.sql
+psql -h 127.0.0.1 -U postgres -d challenge_platform -v ON_ERROR_STOP=1 -f db/05_seed_local_admin.sql
+psql -h 127.0.0.1 -U postgres -d challenge_platform -v ON_ERROR_STOP=1 -f db/06_admin_sessions.sql
+```
+
+The separate `challenge_platform_admin` schema contains `admin_user` (bcrypt
+passwords, enabled flag and timestamps) and `daily_limit_reset_audit` (actor,
+candidate ID, date, removed-lock count and timestamp). The application role can
+read admin accounts and append audit events, but cannot edit accounts or erase audits.
+The local-only seed creates `admin@codereport.com` with the supplied development
+password. Re-running it does not overwrite an existing account. It refuses remote
+database connections. Never deploy these local credentials to AWS; provision unique
+credentials separately, require HTTPS, and apply authentication rate limiting before exposure.
+
+`POST /api/v1/admin/daily-limit/reset` accepts
+an `Authorization: Bearer <session-token>` header and
+`{"emails":["candidate@example.com"],"confirmed":true}`. It uses the same email
+normalization as submissions and clears both EMAIL and PHONE locks for matching
+candidates on the server's current date. Results distinguish `RESET`, `NO_LIMIT`
+and `NOT_FOUND`. Attempts, scores, candidates and historical locks are preserved.
+The reset is transactional with its audit entries and coordinates with in-flight
+submissions via PostgreSQL advisory locks. A busy submission can return HTTP 409;
+no reset is applied in that case. Candidates should reload the challenge after reset.
+
+Authentication endpoints: `POST /api/v1/admin/auth/login` accepts explicit HTTP
+Basic credentials and returns `token`, `email`, `expiresAt`. `POST /auth/session`
+and `POST /auth/logout` under the same admin prefix require the bearer token.
+Basic credentials cannot be used directly on the reset endpoint.

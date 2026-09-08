@@ -54,6 +54,8 @@ public class SubmissionService {
 
     @Transactional
     public Dto.SubmitResponse submit(Dto.SubmitRequest req, String ip, String userAgent) {
+        jdbc.query("SELECT pg_advisory_xact_lock_shared(hashtextextended('challenge-daily-reset', 0))",
+                (org.springframework.jdbc.core.RowCallbackHandler) row -> { });
         Question q = questionRepo.findBySlugAndIsActiveTrue(req.slug())
                 .orElseThrow(() -> new QuestionNotFoundException("No active question: " + req.slug()));
 
