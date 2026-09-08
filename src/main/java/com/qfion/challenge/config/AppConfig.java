@@ -9,9 +9,14 @@ public class AppConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // Local frontend dev server. Tighten to the real origin before any deploy.
+        // CloudFront forwards its own origin Host header, so Spring sees browser POSTs
+        // from the public site as CORS requests even though they are same-origin to the user.
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:3000")
+                .allowedOrigins(
+                        "https://challenge.dev.codereport.com",
+                        "http://localhost:4200",
+                        "http://127.0.0.1:4200",
+                        "http://localhost:3000")
                 .allowedMethods("GET", "POST", "OPTIONS");
     }
 }
