@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -29,6 +31,7 @@ public class SubmissionService {
     private final DailyAttemptLockRepo lockRepo;
     private final IdentityService identityService;
     private final Judge0Client judge;
+    private final JdbcTemplate jdbc;
 
     @Value("${challenge.speed-bonus-ratio:0.20}")
     private double speedBonusRatio;
@@ -59,6 +62,15 @@ public class SubmissionService {
         String phoneNorm = identityService.normalisePhone(req.phone());
         String emailHash = identityService.hash(emailNorm);
         String phoneHash = identityService.hash(phoneNorm);
+
+        // Serialize overlapping identities across requests and ECS tasks. These locks
+        // last until this transaction commits or rolls back, including grading.
+        // A waiting submission then sees the committed daily-limit rows rather than
+        // racing to insert the same candidate or daily attempt lock.
+        Stream.of("challenge-submit:EMAIL:" + emailHash, "challenge-submit:PHONE:" + phoneHash)
+                .sorted()
+                .forEach(key -> jdbc.query("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))",
+                        (org.springframework.jdbc.core.RowCallbackHandler) row -> { }, key));
         LocalDate today = LocalDate.now();
 
         if (lockRepo.existsByIdentityTypeAndIdentityHashAndAttemptDate("EMAIL", emailHash, today)
