@@ -27,7 +27,7 @@ public final class Dto {
             @NotBlank @Size(max = 150) String fullName,
             @NotBlank @Email @Size(max = 255) String email,
             @NotBlank @Size(min = 7, max = 32) String phone,
-            @AssertTrue(message = "Consent is required") Boolean consent,
+            @NotNull Boolean consent,
             Long durationMs,
             String sourceCampaign) {}
 

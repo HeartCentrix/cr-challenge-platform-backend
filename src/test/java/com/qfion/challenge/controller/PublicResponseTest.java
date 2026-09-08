@@ -37,7 +37,7 @@ class PublicResponseTest {
         MockMvcBuilders.standaloneSetup(new SubmissionController(service)).build()
                 .perform(post("/api/v1/submit").contentType(MediaType.APPLICATION_JSON).content("""
                         {"slug":"test-question","sourceCode":"class Main {}","fullName":"Test Candidate",
-                         "email":"test@example.invalid","phone":"2025550196","consent":true}
+                         "email":"test@example.invalid","phone":"2025550196","consent":false}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"message\":\"Your submission has been saved.\"}", true));
