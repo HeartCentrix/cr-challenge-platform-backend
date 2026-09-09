@@ -1,0 +1,6 @@
+.git/
+.env*
+geoip/
+*.log
+target/*
+!target/challenge-platform-0.0.1-SNAPSHOT.jar

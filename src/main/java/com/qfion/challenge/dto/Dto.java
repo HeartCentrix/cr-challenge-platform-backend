@@ -31,7 +31,20 @@ public final class Dto {
             @NotNull Boolean consent,
             Long durationMs,
             String sourceCampaign,
-            @Valid EditorActivity editorActivity) {}
+            @Valid EditorActivity editorActivity,
+            @Pattern(regexp = "[0-9a-fA-F-]{36}") String activityToken) {
+        public SubmitRequest(String slug, String sourceCode, String fullName, String email, String phone,
+                Boolean consent, Long durationMs, String sourceCampaign, EditorActivity editorActivity) {
+            this(slug, sourceCode, fullName, email, phone, consent, durationMs, sourceCampaign, editorActivity, null);
+        }
+    }
+
+    public record ActivityCheckpointRequest(
+            @NotNull @Pattern(regexp = "[0-9a-fA-F-]{36}") String token,
+            @Min(1) @Max(120) int sequence,
+            @NotBlank @Size(max = 255) String slug,
+            @NotNull @Size(max = 32000) String sourceCode,
+            @NotNull @Valid EditorActivity activity) {}
 
     public record ClipboardCounts(
             @Min(0) @Max(1000000) int copy, @Min(0) @Max(1000000) int cut,
@@ -39,9 +52,9 @@ public final class Dto {
 
     public record ActivityEvent(
             @Min(0) @Max(86400000) long offsetMs,
-            @NotNull @Pattern(regexp = "key-(character|delete|layout|navigation|shortcut)|composition|model-change|bulk-change|unexplained-change|unobserved-change|undo|redo|(copy|cut|paste|drop)-blocked|paste-observed") String kind,
+            @NotNull @Pattern(regexp = "key-(character|delete|layout|navigation|shortcut)|composition|model-change|bulk-change|bulk-unexplained|unexplained-change|unobserved-change|undo|redo|(copy|cut|paste|drop)-blocked|paste-observed") String kind,
             @NotNull @Pattern(regexp = "question|answer") String area,
-            Boolean trusted) {}
+            Boolean trusted, @Min(0) @Max(10000000) Integer inserted, @Min(0) @Max(10000000) Integer deleted) {}
 
     /** Unverified client observations. Missing telemetry is not a zero count. */
     public record EditorActivity(
@@ -59,7 +72,10 @@ public final class Dto {
             @Min(0) @Max(10000000) long insertedCharacters,
             @Min(0) @Max(10000000) long deletedCharacters,
             @Min(0) @Max(1000000) int droppedEvents,
-            @NotNull @Size(max = 5000) List<@NotNull @Valid ActivityEvent> events) {}
+            @NotNull @Size(max = 5000) List<@NotNull @Valid ActivityEvent> events,
+            @Min(0) @Max(1000000) Integer bulkChangeCount,
+            @Min(0) @Max(1000000) Integer unexplainedBulkChangeCount,
+            @Min(0) @Max(10000000) Integer largestInsertion) {}
 
     /** Candidate-facing acknowledgement; grading data remains in the database. */
     public record SubmitResponse(String message) {}

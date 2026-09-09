@@ -24,5 +24,6 @@ public final class AdminStatsDto {
             Boolean passed, String judgeStatus, Integer execTimeMs, Integer memoryKb, String stdout) {}
     public record AttemptDetail(AttemptSummary summary, String sourceCode, String prompt, int difficulty,
             int timeLimitSeconds, String starterCode, String referenceSolution, String ipAddress,
-            String userAgent, List<CaseResult> testcases, Dto.EditorActivity editorActivity) {}
+            String userAgent, List<CaseResult> testcases, Dto.EditorActivity editorActivity,
+            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory) {}
 }

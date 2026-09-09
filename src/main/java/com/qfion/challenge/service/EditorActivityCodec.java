@@ -16,6 +16,9 @@ public final class EditorActivityCodec {
     public static String encode(EditorActivity activity, String slug) {
         if (activity == null) return null;
         if (!slug.equals(activity.questionSlug()) || activity.trustedKeydownCount() > activity.keydownCount()) throw invalid();
+        if (activity.unexplainedBulkChangeCount() != null && (activity.bulkChangeCount() == null
+                || activity.unexplainedBulkChangeCount() > activity.bulkChangeCount())) throw invalid();
+        if (activity.largestInsertion() != null && activity.largestInsertion() > activity.insertedCharacters()) throw invalid();
         try { OffsetDateTime.parse(activity.startedAt()); }
         catch (DateTimeParseException error) { throw invalid(); }
         long previous = -1;

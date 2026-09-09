@@ -31,6 +31,7 @@ public class SubmissionService {
     private final IdentityService identityService;
     private final Judge0Client judge;
     private final JdbcTemplate jdbc;
+    private final ActivityCheckpointService checkpoints;
 
     @Value("${challenge.speed-bonus-ratio:0.20}")
     private double speedBonusRatio;
@@ -103,6 +104,8 @@ public class SubmissionService {
                 .ipAddress(ip)
                 .userAgent(userAgent)
                 .build());
+
+        checkpoints.attach(req.activityToken(), req.slug(), attempt.getId());
 
         int passed = 0;
         BigDecimal basePoints = BigDecimal.ZERO;

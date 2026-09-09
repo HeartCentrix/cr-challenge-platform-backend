@@ -11,6 +11,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@org.springframework.scheduling.annotation.EnableScheduling
 public class AppConfig implements WebMvcConfigurer {
 
     // Run admin CORS before authentication, including error responses and preflights.

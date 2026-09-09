@@ -1,5 +1,72 @@
 # Challenge Platform Backend
 
+## Mass-input activity checkpoints
+
+Apply `db/08_activity_checkpoints.sql` as the **challenge_platform** database owner
+before deploying this backend, then deploy the frontend. It is additive and contains
+no credentials. Local migration has no effect on AWS. Migration 07 is still required.
+
+`POST /api/v1/activity-checkpoints` accepts changed editor code and compact activity
+summaries. A random per-page UUID is a write/claim capability (only its SHA-256 hash
+is stored), not verified candidate identity. There is no public read endpoint.
+`activityToken` on submission attaches the history to that attempt atomically and
+seals further writes. Historical/old-client submissions have no checkpoints.
+Only authenticated candidate-attempt admin details expose history, including server
+receipt timestamps, final-code comparison and intervals longer than 90 seconds.
+
+The frontend flags edits inserting 80+ characters, or a one-second burst of 80+
+characters with little corresponding typing. Starter loading and undo/redo are
+excluded. Counts, insertion size and event offsets are saved with final activity.
+These are **unverified review signals**, never an automatic rejection or a claimed
+DevTools paste count. Legitimate formatting, completion and assistive input can
+trigger them. Gaps/mismatches can be offline/idle time or unsaved final edits.
+
+Changed state is batched every 30 seconds, with a final best-effort flush (maximum
+1.5-second network wait). Idle state makes no request. Checkpoints contain editor
+code, not OS clipboard contents, literal keystrokes or personal-detail fields.
+Failures never stop grading; retry payloads are immutable and sequence-numbered.
+Each session allows at most 120 checkpoints during its first hour, separated by at
+least five seconds (exact duplicate retries are safe). Code is capped at 32,000
+characters and each compact report at 100 notable events / 20,000 JSON characters.
+Oversized editor code skips checkpoints but remains submittable.
+
+The application permits 120 checkpoint requests/IP/minute/instance with bounded
+rate-limit memory. Configure an edge/WAF limit for aggregate/distributed abuse
+before public rollout; the local guard alone is not DDoS protection. Preserve the
+trusted-proxy configuration so unrelated candidates are not grouped by proxy IP.
+Abandoned, unlinked histories expire after 24 hours (hourly cleanup). Attached
+history is retained with the attempt and cascades on attempt deletion. Before
+rollout, ensure candidate-facing assessment/privacy terms disclose editor-history
+collection and define the retention/access policy; admin flags require human review.
+
+Verification: `CHALLENGE_STATS_DB_TESTS=true` enables rollback-only local PostgreSQL
+checkpoint/submission/admin integration tests; never point these at the dev database.
+
+## Candidate IP map
+
+`GET /api/v1/stats` now also returns `activityMap: {status, points}`. Each point has
+only `latitude`, `longitude` and `candidates`. No IPs, names, emails, IDs or exact city
+coordinates are public. Each candidate counts once using their latest submission IP.
+Locations are resolved offline with DB-IP City Lite, grouped into half-degree cells
+and cached for five minutes per backend instance. The frontend reuses its existing
+stats request and snaps coarse coastal locations onto the original US land geometry.
+Unknown/private IPs, non-US candidates, Alaska and Hawaii are not shown on this
+continental-US map. Empty/unavailable results never create decorative activity dots.
+IP geolocation is approximate: VPNs, shared networks and database errors affect it.
+
+See `geoip/README.md` for the pinned database release, checksums and attribution.
+The binary is git-ignored and loaded locally; the Docker build includes a verified
+copy for deployment, with no per-candidate external lookup or paid API dependency.
+Memory-mapped lookups and the aggregate cache add no calls to submission grading.
+No database migration or candidate-record backfill is required.
+
+For local/direct access, `TRUSTED_PROXY_HOPS=0` ignores spoofable forwarded headers.
+The AWS Docker image uses `2` for the existing restricted CloudFront -> ALB -> backend
+chain and selects the visitor from the right of X-Forwarded-For, ignoring any
+user-prepended addresses. Direct origin access must remain restricted; change the
+setting if that topology changes. Old stored IPs cannot be retroactively authenticated.
+Set `CHALLENGE_GEOIP_TESTS=true` to exercise the downloaded database during tests.
+
 Spring Boot API for the public Code Report coding challenge platform.
 
 ## Requirements

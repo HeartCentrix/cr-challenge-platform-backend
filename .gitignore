@@ -9,3 +9,8 @@ application-local.yml
 # secrets - never commit
 .env
 .env.local
+
+# Downloaded IP-location database, not source code or a public asset.
+geoip/*.mmdb
+geoip/*.gz
+geoip/*.part

@@ -2,6 +2,8 @@ package com.qfion.challenge.controller;
 
 import com.qfion.challenge.dto.Dto;
 import com.qfion.challenge.service.SubmissionService;
+import com.qfion.challenge.service.ClientIpAddress;
+import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,8 @@ import java.util.Map;
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    @Value("${challenge.trusted-proxy-hops:0}")
+    private int trustedProxyHops;
 
     @PostMapping("/run")
     public Dto.RunResult run(@Valid @RequestBody Dto.RunRequest req) {
@@ -35,8 +39,6 @@ public class SubmissionController {
     }
 
     private String clientIp(HttpServletRequest req) {
-        String fwd = req.getHeader("X-Forwarded-For");
-        if (fwd != null && !fwd.isBlank()) return fwd.split(",")[0].trim();
-        return req.getRemoteAddr();
+        return ClientIpAddress.from(req, trustedProxyHops);
     }
 }

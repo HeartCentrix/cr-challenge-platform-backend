@@ -31,6 +31,10 @@ springdoc:
     tags-sorter: alpha
 
 challenge:
+  # Default 0 for direct/local access. Use 2 only behind an enforced CloudFront -> ALB chain.
+  trusted-proxy-hops: ${TRUSTED_PROXY_HOPS:0}
+  geoip:
+    database: ${GEOIP_DATABASE_PATH:geoip/dbip-city-lite.mmdb}
   # Judge0 endpoint used to run and grade submissions.
   judge:
     base-url: ${JUDGE_BASE_URL:https://judge.codereport.com}
