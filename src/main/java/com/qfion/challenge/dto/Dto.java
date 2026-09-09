@@ -1,6 +1,7 @@
 package com.qfion.challenge.dto;
 
 import jakarta.validation.constraints.*;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /** All request and response shapes for the public API. */
@@ -29,7 +30,36 @@ public final class Dto {
             @NotBlank @Size(min = 7, max = 32) String phone,
             @NotNull Boolean consent,
             Long durationMs,
-            String sourceCampaign) {}
+            String sourceCampaign,
+            @Valid EditorActivity editorActivity) {}
+
+    public record ClipboardCounts(
+            @Min(0) @Max(1000000) int copy, @Min(0) @Max(1000000) int cut,
+            @Min(0) @Max(1000000) int paste, @Min(0) @Max(1000000) int drop) {}
+
+    public record ActivityEvent(
+            @Min(0) @Max(86400000) long offsetMs,
+            @NotNull @Pattern(regexp = "key-(character|delete|layout|navigation|shortcut)|composition|model-change|bulk-change|unexplained-change|unobserved-change|undo|redo|(copy|cut|paste|drop)-blocked|paste-observed") String kind,
+            @NotNull @Pattern(regexp = "question|answer") String area,
+            Boolean trusted) {}
+
+    /** Unverified client observations. Missing telemetry is not a zero count. */
+    public record EditorActivity(
+            @Min(1) @Max(1) int version,
+            @NotBlank @Size(max = 255) String questionSlug,
+            @NotBlank @Size(max = 40) String startedAt,
+            @Min(0) @Max(86400000) long elapsedMs,
+            @NotNull @Valid ClipboardCounts question, @NotNull @Valid ClipboardCounts answer,
+            @Min(0) @Max(1000000) int keydownCount,
+            @Min(0) @Max(1000000) int trustedKeydownCount,
+            @Min(0) @Max(1000000) int syntheticEvents,
+            @Min(0) @Max(1000000) int modelChangeCount,
+            @Min(0) @Max(1000000) int unexplainedChangeCount,
+            @Min(0) @Max(1000000) int observedPasteCount,
+            @Min(0) @Max(10000000) long insertedCharacters,
+            @Min(0) @Max(10000000) long deletedCharacters,
+            @Min(0) @Max(1000000) int droppedEvents,
+            @NotNull @Size(max = 5000) List<@NotNull @Valid ActivityEvent> events) {}
 
     /** Candidate-facing acknowledgement; grading data remains in the database. */
     public record SubmitResponse(String message) {}

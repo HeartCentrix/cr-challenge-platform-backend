@@ -186,3 +186,26 @@ Authentication endpoints: `POST /api/v1/admin/auth/login` accepts explicit HTTP
 Basic credentials and returns `token`, `email`, `expiresAt`. `POST /auth/session`
 and `POST /auth/logout` under the same admin prefix require the bearer token.
 Basic credentials cannot be used directly on the reset endpoint.
+
+## Editor activity telemetry
+
+Before starting the updated backend, apply `db/07_editor_activity.sql` as the owner of
+the **challenge_platform** database. The migration adds one nullable activity column to
+`challenge_platform.attempt`; it does not alter existing candidates, scores or daily limits.
+Apply this migration before the backend deployment, then deploy the frontend.
+
+`POST /api/v1/submit` accepts optional `editorActivity` (version 1), validated recursively:
+question slug must match the submitted question, counters cannot be negative, and the
+timeline is capped at 5,000 categorized events with ordered offsets within a 24-hour window.
+It is saved atomically with the attempt and returned only by the authenticated admin
+attempt-detail endpoint. Historical/missing reports are NULL, not zero. Public responses
+still contain only the acknowledgement; this feature does not change grading.
+
+Reports contain key categories and timing, not literal typed keys or clipboard contents.
+They are unverified client observations: DevTools and custom clients can bypass or forge
+them. Unexplained model changes are review signals, not proof of cheating. There is no
+per-keystroke API, background beacon or abandoned-session record. Deleting an attempt
+removes its telemetry. The frontend's `EDITOR_ACTIVITY.md` documents scope and limitations.
+
+Tests: `mvn --no-transfer-progress test`; set `CHALLENGE_STATS_DB_TESTS=true` and a local
+challenge datasource to also run rollback-only PostgreSQL submission/storage tests.

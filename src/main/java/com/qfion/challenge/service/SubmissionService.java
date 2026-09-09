@@ -54,6 +54,7 @@ public class SubmissionService {
 
     @Transactional
     public Dto.SubmitResponse submit(Dto.SubmitRequest req, String ip, String userAgent) {
+        String editorActivity = EditorActivityCodec.encode(req.editorActivity(), req.slug());
         jdbc.query("SELECT pg_advisory_xact_lock_shared(hashtextextended('challenge-daily-reset', 0))",
                 (org.springframework.jdbc.core.RowCallbackHandler) row -> { });
         Question q = questionRepo.findBySlugAndIsActiveTrue(req.slug())
@@ -94,6 +95,7 @@ public class SubmissionService {
                 .durationMs(req.durationMs())
                 .judgeLanguageId(q.getJudgeLanguageId())
                 .sourceCode(req.sourceCode())
+                .editorActivityJson(editorActivity)
                 .testcasesPassed(0)
                 .testcasesTotal(testcases.size())
                 .score(BigDecimal.ZERO)

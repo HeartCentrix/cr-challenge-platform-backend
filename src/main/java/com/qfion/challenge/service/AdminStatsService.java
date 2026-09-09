@@ -160,12 +160,12 @@ public class AdminStatsService {
 
     public AttemptDetail attempt(long candidateId, long attemptId) {
         var rows = jdbc.query("SELECT " + SUMMARY + ", a.source_code, q.prompt, q.difficulty, q.time_limit_seconds, "
-                + "q.starter_code, q.reference_solution, a.ip_address, a.user_agent "
+                + "q.starter_code, q.reference_solution, a.ip_address, a.user_agent, a.editor_activity_json "
                 + "FROM challenge_platform.attempt a JOIN challenge_platform.question q ON q.id = a.question_id "
                 + "WHERE a.id = ? AND a.candidate_id = ?", (rs, n) -> new AttemptDetail(summary(rs),
                         rs.getString("source_code"), rs.getString("prompt"), rs.getInt("difficulty"), rs.getInt("time_limit_seconds"),
                         rs.getString("starter_code"), rs.getString("reference_solution"), rs.getString("ip_address"),
-                        rs.getString("user_agent"), List.of()), attemptId, candidateId);
+                        rs.getString("user_agent"), List.of(), EditorActivityCodec.decode(rs.getString("editor_activity_json"))), attemptId, candidateId);
         if (rows.isEmpty()) throw notFound();
         var a = rows.get(0);
         var cases = jdbc.query("""
@@ -179,7 +179,7 @@ public class AdminStatsService {
                         rs.getString("judge_status"), (Integer) rs.getObject("exec_time_ms"), (Integer) rs.getObject("memory_kb"),
                         rs.getString("stdout_text")), attemptId);
         return new AttemptDetail(a.summary(), a.sourceCode(), a.prompt(), a.difficulty(), a.timeLimitSeconds(),
-                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases);
+                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases, a.editorActivity());
     }
 
     private static AttemptSummary summary(ResultSet rs) throws SQLException {

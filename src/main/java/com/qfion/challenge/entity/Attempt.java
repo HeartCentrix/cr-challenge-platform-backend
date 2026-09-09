@@ -18,6 +18,8 @@ public class Attempt {
     private Integer judgeLanguageId;
     @Column(columnDefinition = "text")
     private String sourceCode;
+    @Column(columnDefinition = "text")
+    private String editorActivityJson;
     private Integer testcasesPassed;
     private Integer testcasesTotal;
     private BigDecimal score;

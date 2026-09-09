@@ -1,0 +1,50 @@
+package com.qfion.challenge.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qfion.challenge.dto.Dto;
+import com.qfion.challenge.service.*;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.UUID;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+/** Local-only submission/storage/admin round trip. Every fixture rolls back; judge is mocked. */
+@SpringBootTest
+@EnabledIfEnvironmentVariable(named = "CHALLENGE_STATS_DB_TESTS", matches = "true")
+@Transactional(isolation = Isolation.REPEATABLE_READ)
+class EditorActivityDatabaseTest {
+    @Autowired JdbcTemplate jdbc;
+    @Autowired SubmissionService submissions;
+    @Autowired AdminStatsService stats;
+    @Autowired EntityManager em;
+    @MockBean Judge0Client judge;
+
+    @Test void persistsActivityWithItsQuestionAndCandidateAndReadsItOnlyThroughOwnedAttempt() throws Exception {
+        assertEquals("challenge_platform", jdbc.queryForObject("SELECT current_database()", String.class));
+        assertTrue(java.util.List.of("127.0.0.1", "::1").contains(jdbc.queryForObject("SELECT host(inet_server_addr())", String.class)));
+        String slug = jdbc.queryForObject("SELECT slug FROM challenge_platform.question WHERE is_active ORDER BY id LIMIT 1", String.class);
+        var telemetry = new ObjectMapper().readValue(EditorActivityTest.ACTIVITY.replace("test-question", slug), Dto.EditorActivity.class);
+        String email = "activity-test-" + UUID.randomUUID() + "@example.invalid";
+        String phone = "+1202" + String.format("%07d", Math.floorMod(UUID.randomUUID().hashCode(), 10000000));
+        when(judge.execute(anyString(), anyInt(), nullable(String.class), nullable(String.class)))
+                .thenReturn(new Judge0Client.Execution(3, "Accepted", "", null, 1, 1));
+        var req = new Dto.SubmitRequest(slug, "class Main {}", "Activity Fixture", email, phone, false, 1000L, "test", telemetry);
+        assertNotNull(submissions.submit(req, "127.0.0.1", "local-test"));
+        em.flush();
+        long candidate = jdbc.queryForObject("SELECT id FROM challenge_platform.candidate WHERE email_normalised = ?", Long.class, email);
+        long attempt = jdbc.queryForObject("SELECT id FROM challenge_platform.attempt WHERE candidate_id = ?", Long.class, candidate);
+        var saved = stats.attempt(candidate, attempt);
+        assertEquals(slug, saved.summary().slug());
+        assertEquals(telemetry, saved.editorActivity());
+        assertThrows(ResponseStatusException.class, () -> stats.attempt(-1, attempt));
+    }
+}
