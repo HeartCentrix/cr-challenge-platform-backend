@@ -16,7 +16,8 @@ public final class AdminStatsDto {
     public record AttemptSummary(long id, long questionId, String slug, String title, String language,
             OffsetDateTime submittedAt, Long durationMs, int testcasesPassed, int testcasesTotal,
             BigDecimal passPercentage, BigDecimal score, BigDecimal speedBonus, String judgeStatus) {}
-    public record CandidateRow(long id, String fullName, String email, String phone, String sourceCampaign, Performance performance) {}
+    public record CandidateRow(long id, String fullName, String email, String phone, String sourceCampaign, Performance performance,
+            String regionCode, String region) {}
     public record CandidateDetail(long id, String fullName, String email, String phone, boolean consented,
             String sourceCampaign, OffsetDateTime firstSeenAt, OffsetDateTime lastSeenAt,
             Performance performance, Page<AttemptSummary> attempts) {}
@@ -25,5 +26,7 @@ public final class AdminStatsDto {
     public record AttemptDetail(AttemptSummary summary, String sourceCode, String prompt, int difficulty,
             int timeLimitSeconds, String starterCode, String referenceSolution, String ipAddress,
             String userAgent, List<CaseResult> testcases, Dto.EditorActivity editorActivity,
-            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory) {}
+            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory, SessionTiming sessionTiming) {}
+    public record SessionTiming(long sessionId, int questionNumber, OffsetDateTime startedAt,
+            OffsetDateTime expiresAt, OffsetDateTime finishedAt, Long elapsedMs) {}
 }

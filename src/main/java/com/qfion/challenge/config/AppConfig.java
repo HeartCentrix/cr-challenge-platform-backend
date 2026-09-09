@@ -14,6 +14,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @org.springframework.scheduling.annotation.EnableScheduling
 public class AppConfig implements WebMvcConfigurer {
 
+    @Bean public org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler taskScheduler() {
+        var scheduler = new org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(2); // Grading must not block deadline expiry.
+        scheduler.setThreadNamePrefix("challenge-jobs-");
+        return scheduler;
+    }
+
     // Run admin CORS before authentication, including error responses and preflights.
     @Bean
     public FilterRegistrationBean<CorsFilter> adminCorsFilter() {

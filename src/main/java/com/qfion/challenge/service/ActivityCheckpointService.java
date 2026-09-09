@@ -35,6 +35,14 @@ public class ActivityCheckpointService {
 
     @Transactional
     public void save(Dto.ActivityCheckpointRequest request) {
+        Long roundId = null;
+        if (request.challengeToken() != null) {
+            // Lock global session before activity session, matching submission lock order.
+            var rounds = jdbc.queryForList("SELECT r.id FROM challenge_platform.challenge_session s JOIN challenge_platform.session_question r ON r.session_id=s.id JOIN challenge_platform.question q ON q.id=r.question_id WHERE s.token_hash=? AND r.ordinal=? AND q.slug=? AND s.finished_at IS NULL AND s.expires_at>clock_timestamp() AND r.attempt_id IS NULL FOR UPDATE OF s", Long.class,
+                hashToken(request.challengeToken()), request.ordinal(), request.slug());
+            if (rounds.isEmpty()) throw status(HttpStatus.CONFLICT);
+            roundId = rounds.get(0);
+        }
         String hash = hashToken(request.token());
         String activity = EditorActivityCodec.encode(request.activity(), request.slug());
         if (activity.length() > 20000 || request.activity().events().size() > 100) throw status(HttpStatus.BAD_REQUEST);
@@ -48,6 +56,11 @@ public class ActivityCheckpointService {
         var sessions = jdbc.queryForList("SELECT question_slug, attempt_id, created_at FROM challenge_platform.activity_session WHERE token_hash = ? FOR UPDATE", hash);
         if (sessions.isEmpty()) throw status(HttpStatus.NOT_FOUND);
         var session = sessions.get(0);
+        if (roundId != null) {
+            var bound = jdbc.queryForObject("SELECT session_question_id FROM challenge_platform.activity_session WHERE token_hash=?", Long.class, hash);
+            if (bound != null && !bound.equals(roundId)) throw status(HttpStatus.CONFLICT);
+            jdbc.update("UPDATE challenge_platform.activity_session SET session_question_id=? WHERE token_hash=?", roundId, hash);
+        }
         if (!request.slug().equals(session.get("question_slug")) || session.get("attempt_id") != null) throw status(HttpStatus.CONFLICT);
         Boolean expired = jdbc.queryForObject("SELECT created_at < now() - interval '1 hour' FROM challenge_platform.activity_session WHERE token_hash = ?", Boolean.class, hash);
         if (Boolean.TRUE.equals(expired)) throw status(HttpStatus.GONE);
@@ -78,9 +91,9 @@ public class ActivityCheckpointService {
 
     public History history(long attemptId, String finalCode) {
         var rows = jdbc.query("""
-            SELECT c.sequence, c.received_at, c.source_code, c.activity_json
+            SELECT row_number() OVER (ORDER BY c.received_at,c.token_hash,c.sequence) AS sequence, c.received_at, c.source_code, c.activity_json
             FROM challenge_platform.activity_checkpoint c JOIN challenge_platform.activity_session s USING (token_hash)
-            WHERE s.attempt_id = ? ORDER BY c.sequence
+            WHERE s.attempt_id = ? ORDER BY c.received_at,c.token_hash,c.sequence
             """, (rs, n) -> new Checkpoint(rs.getInt(1), rs.getObject(2, OffsetDateTime.class), rs.getString(3), EditorActivityCodec.decode(rs.getString(4))), attemptId);
         boolean gaps = false;
         for (int i = 1; i < rows.size(); i++) {

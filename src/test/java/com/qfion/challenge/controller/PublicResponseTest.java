@@ -55,7 +55,7 @@ class PublicResponseTest {
     }
 
     @Test
-    void submissionExposesOnlyAcknowledgement() throws Exception {
+    void legacySubmissionCannotBypassSessionDeadline() throws Exception {
         SubmissionService service = mock(SubmissionService.class);
         when(service.submit(any(Dto.SubmitRequest.class), nullable(String.class), nullable(String.class)))
                 .thenReturn(new Dto.SubmitResponse("Your submission has been saved."));
@@ -64,7 +64,7 @@ class PublicResponseTest {
                         {"slug":"test-question","sourceCode":"class Main {}","fullName":"Test Candidate",
                          "email":"test@example.invalid","phone":"2025550196","consent":false}
                         """))
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"message\":\"Your submission has been saved.\"}", true));
+                .andExpect(status().isGone())
+                .andExpect(content().json("{\"error\":\"Please reload and start a 10-minute challenge session.\"}", true));
     }
 }

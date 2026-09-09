@@ -1,5 +1,83 @@
 # Challenge Platform Backend
 
+## Admin candidate regions
+
+Apply `db/10_candidate_regions.sql` after migration 09 before deploying this backend.
+It adds a nullable state classification to attempts without changing original IPs or
+scores. New session answers resolve their region through the existing offline DB-IP
+database. A bounded worker backfills up to 200 historical/unresolved attempts every
+minute (first run five seconds after startup); disable it in fixture tests with
+`challenge.regions.backfill-enabled=false`. Missing geolocation files leave entries
+pending for a later restart with the database available. Unknown/private/missing IPs
+are not guessed. Resolved classifications remain a stored lookup snapshot.
+
+Authenticated overview and candidate-list endpoints accept `region=TX` (any of the
+50 US state codes or DC), `NON_US`, `UNKNOWN`, or empty for all. Invalid values return
+400. Each candidate's region is from their latest submission **within the selected
+dates and asOf snapshot**, ordered by timestamp then attempt ID. The region selects
+candidates; all their submissions in that scope still contribute to performance.
+Filtering precedes cursor pagination and applies equally to totals and charts.
+Candidate rows include `regionCode` and `region`; public APIs do not expose these.
+No external per-IP lookup request, new paid service, or extra frontend geolocation
+request is used. IP-derived states are approximate, not verified residence; VPNs,
+mobile networks, proxies and database inaccuracies can change the reported state.
+Excel exports include the region and filter, including the filter in the filename.
+Refresh an already-open admin page after initial backfill to replace cached results.
+Local migration/backfill does not modify AWS.
+
+## Global 10-minute challenge sessions
+
+Apply `db/09_global_challenge_sessions.sql` as the **challenge_platform** database
+owner after migrations 07 and 08, before deploying this backend and frontend together.
+The migration is additive; old attempts are preserved. Applying it locally does not
+migrate AWS. The pipeline does not apply database migrations automatically.
+
+The candidate supplies details before starting. One session per email/phone per
+server calendar day replaces one answer per day. A developer reset closes the old
+session before granting a new slot. Starting consumes the daily slot, even if no
+answer is submitted. Identity is self-reported, not email-verified.
+
+All session endpoints are POST under `/api/v1/challenge-sessions`, with no-store
+responses and a random UUID capability in the JSON body (never in a URL):
+
+- `/start`: token, fullName, email, phone, sourceCampaign; returns the first random
+  question and server-controlled start/deadline. Reusing the token resumes that session.
+- `/state`: token; resumes the current question, saved draft and unchanged deadline.
+- `/answer`: token, ordinal, sourceCode, editorActivity; atomically saves one answer
+  and returns the next non-repeating random question. Duplicate ordinal retries are
+  idempotent. Deadline checks use the database clock, not client duration.
+- `/draft`: token, ordinal, revision, sourceCode, editorActivity; changed drafts only,
+  with monotonically increasing revisions to reject stale autosaves.
+- `/finish`: token; closes the session. At expiry, only the last nonblank draft
+  received by the server **before** the deadline is submitted. No late replacement is
+  accepted. Unsaved/offline edits are not recoverable. An untouched starter is not
+  autosaved by the frontend. Exhausting the question bank also ends the session.
+
+Answers are committed as QUEUED before grading. A scheduled worker grades from this
+durable database queue; a separate scheduler thread expires sessions even while
+grading is slow. Multi-instance workers use row locks and SKIP LOCKED. Judge
+infrastructure failures retry after 30 seconds, up to three tries, then show
+GRADING_UNAVAILABLE for admin review. No new external queue/service is required.
+Queued scores are provisional until grading completes; reload an already-open
+admin view to replace its cached snapshot.
+
+Per-question duration excludes earlier questions. Speed bonus uses elapsed time
+within the global 600-second session. Admin attempt details and Excel include
+session ID, question number, global start/deadline and elapsed time; timestamps
+remain in the admin's local time zone. Public responses never contain scores or
+hidden test results. Legacy `POST /api/v1/submit` returns 410 so it cannot bypass
+session enforcement. Existing question and sample-run endpoints remain available.
+
+Activity checkpoints now bind to challengeToken + ordinal; tracking streams from
+reloads attach to the same answer. Final activity travels in the answer request
+without a checkpoint wait. Drafts save every five seconds only when code changes;
+immutable activity checkpoints remain on their 30-second changed-state schedule.
+Both APIs share the bounded per-IP guard described below.
+
+Local verification: `CHALLENGE_STATS_DB_TESTS=true` enables rollback-only session,
+deadline, draft, duplicate-answer, grading and admin-history tests. Workers can be
+disabled in tests with `challenge.sessions.workers-enabled=false`.
+
 ## Mass-input activity checkpoints
 
 Apply `db/08_activity_checkpoints.sql` as the **challenge_platform** database owner
@@ -9,8 +87,8 @@ no credentials. Local migration has no effect on AWS. Migration 07 is still requ
 `POST /api/v1/activity-checkpoints` accepts changed editor code and compact activity
 summaries. A random per-page UUID is a write/claim capability (only its SHA-256 hash
 is stored), not verified candidate identity. There is no public read endpoint.
-`activityToken` on submission attaches the history to that attempt atomically and
-seals further writes. Historical/old-client submissions have no checkpoints.
+The current challengeToken + ordinal binding attaches history atomically on answer
+submission and seals further writes. Historical submissions may have no checkpoints.
 Only authenticated candidate-attempt admin details expose history, including server
 receipt timestamps, final-code comparison and intervals longer than 90 seconds.
 
@@ -21,8 +99,8 @@ These are **unverified review signals**, never an automatic rejection or a claim
 DevTools paste count. Legitimate formatting, completion and assistive input can
 trigger them. Gaps/mismatches can be offline/idle time or unsaved final edits.
 
-Changed state is batched every 30 seconds, with a final best-effort flush (maximum
-1.5-second network wait). Idle state makes no request. Checkpoints contain editor
+Changed state is batched every 30 seconds (maximum 1.5-second network wait per
+checkpoint). Final activity is included directly in the answer. Idle state makes no request. Checkpoints contain editor
 code, not OS clipboard contents, literal keystrokes or personal-detail fields.
 Failures never stop grading; retry payloads are immutable and sequence-numbered.
 Each session allows at most 120 checkpoints during its first hour, separated by at
@@ -181,13 +259,12 @@ Local PostgreSQL integration tests are opt-in: set `CHALLENGE_STATS_DB_TESTS=tru
 before `mvn test`. They verify the local server/database before inserting fixtures;
 all fixture rows roll back (identity sequences may advance). Default tests need no DB.
 - `POST /api/v1/run`
-- `POST /api/v1/submit`
+- `POST /api/v1/submit` — retired (410); use challenge-sessions/answer.
 - `GET /api/v1/leaderboard`
 - `GET /api/v1/stats`
 
-The public leaderboard returns only `rank` and `displayName`. Successful submissions
-return only a confirmation `message`; scores, timings, and grading results are stored
-internally in PostgreSQL and are not included in candidate-facing responses.
+The public leaderboard returns only `rank` and `displayName`. Session responses expose
+progress, timing and the next public question, never scores or hidden grading results.
 
 Swagger uses same-origin, relative server URLs, so it works locally and behind the AWS
 reverse proxy without storing infrastructure addresses or credentials in the codebase.
@@ -261,17 +338,18 @@ the **challenge_platform** database. The migration adds one nullable activity co
 `challenge_platform.attempt`; it does not alter existing candidates, scores or daily limits.
 Apply this migration before the backend deployment, then deploy the frontend.
 
-`POST /api/v1/submit` accepts optional `editorActivity` (version 1), validated recursively:
+`POST /api/v1/challenge-sessions/answer` accepts optional `editorActivity` (version 1), validated recursively:
 question slug must match the submitted question, counters cannot be negative, and the
 timeline is capped at 5,000 categorized events with ordered offsets within a 24-hour window.
 It is saved atomically with the attempt and returned only by the authenticated admin
 attempt-detail endpoint. Historical/missing reports are NULL, not zero. Public responses
-still contain only the acknowledgement; this feature does not change grading.
+never contain the activity report or private grading results.
 
 Reports contain key categories and timing, not literal typed keys or clipboard contents.
 They are unverified client observations: DevTools and custom clients can bypass or forge
 them. Unexplained model changes are review signals, not proof of cheating. There is no
-per-keystroke API, background beacon or abandoned-session record. Deleting an attempt
+per-keystroke API or literal-key log. Session drafts and checkpoints are stored in
+bounded batches as described above. Deleting an attempt
 removes its telemetry. The frontend's `EDITOR_ACTIVITY.md` documents scope and limitations.
 
 Tests: `mvn --no-transfer-progress test`; set `CHALLENGE_STATS_DB_TESTS=true` and a local

@@ -29,17 +29,23 @@ public class AdminStatsService {
 
     // Aggregate before classifying: every submission contributes, including repeated questions.
     private static final String AGGREGATE = """
-            WITH aggregate AS (
+            WITH scoped AS (
+              SELECT id,candidate_id,question_id,testcases_passed,testcases_total,score,duration_ms,submitted_at,region_code
+              FROM challenge_platform.attempt
+              WHERE submitted_at >= :start AND submitted_at < :end AND submitted_at <= :asOf
+            ), latest_region AS (
+              SELECT DISTINCT ON (candidate_id) candidate_id, coalesce(region_code,'UNKNOWN') AS region_code
+              FROM scoped ORDER BY candidate_id, submitted_at DESC, id DESC
+            ), aggregate AS (
               SELECT candidate_id, count(*) AS attempt_count, count(DISTINCT question_id) AS questions_attempted,
                 sum(testcases_passed) AS testcases_passed, sum(testcases_total) AS testcases_total,
                 100.0 * sum(testcases_passed) / NULLIF(sum(testcases_total), 0) AS pass_percentage,
                 sum(score) AS total_score, avg(score) AS average_score, sum(duration_ms) AS duration_ms,
                 max(submitted_at) AS last_submitted_at
-              FROM challenge_platform.attempt
-              WHERE submitted_at >= :start AND submitted_at < :end AND submitted_at <= :asOf
+              FROM scoped
               GROUP BY candidate_id
             ), classified AS (
-              SELECT aggregate.*, CASE
+              SELECT aggregate.*, latest_region.region_code, CASE
                 WHEN pass_percentage IS NULL THEN 'unavailable'
                 WHEN pass_percentage = 0 THEN 'zero'
                 WHEN pass_percentage <= 25 THEN 'low'
@@ -47,16 +53,22 @@ public class AdminStatsService {
                 WHEN pass_percentage <= 75 THEN 'half'
                 WHEN pass_percentage < 100 THEN 'high'
                 ELSE 'perfect' END AS bucket
-              FROM aggregate
+              FROM aggregate JOIN latest_region USING (candidate_id)
             )
             """;
     public record Filters(String search, String campaign, String startDate, String endDate, String timeZone,
-                          double minPercent, double maxPercent, String asOf) {
+                          double minPercent, double maxPercent, String asOf, String region) {
+        public Filters(String search, String campaign, String startDate, String endDate, String timeZone,
+                double minPercent, double maxPercent, String asOf) {
+            this(search,campaign,startDate,endDate,timeZone,minPercent,maxPercent,asOf,"");
+        }
         public static Filters all() { return new Filters("", "", "", "", "UTC", 0, 100, ""); }
     }
     private org.springframework.jdbc.core.namedparam.MapSqlParameterSource parameters(Filters f) {
         if (f.search().length() > 255) throw badRequest("Search must be at most 255 characters.");
         if (f.campaign().length() > 255) throw badRequest("Campaign must be at most 255 characters.");
+        String region = f.region().trim().toUpperCase(java.util.Locale.ROOT);
+        if (!CandidateRegions.valid(region)) throw badRequest("Unknown region. Use a US state code, NON_US, or UNKNOWN.");
         if (!Double.isFinite(f.minPercent()) || !Double.isFinite(f.maxPercent())
                 || f.minPercent() < 0 || f.maxPercent() > 100 || f.minPercent() > f.maxPercent())
             throw badRequest("Percentage must be between 0 and 100, with minimum no greater than maximum.");
@@ -72,7 +84,7 @@ public class AdminStatsService {
                     .addValue("end", java.sql.Timestamp.from(end.plusDays(1).atStartOfDay(zone).toInstant()))
                     .addValue("asOf", java.sql.Timestamp.from(asOf))
                     .addValue("min", f.minPercent()).addValue("max", f.maxPercent())
-                    .addValue("search", f.search().trim()).addValue("campaign", f.campaign().trim());
+                    .addValue("search", f.search().trim()).addValue("campaign", f.campaign().trim()).addValue("region", region);
         } catch (java.time.DateTimeException | IllegalArgumentException ex) {
             throw badRequest("Invalid date, time zone, or snapshot.");
         }
@@ -83,6 +95,7 @@ public class AdminStatsService {
                OR (a.pass_percentage IS NULL AND :min = 0 AND :max = 100))
              AND position(lower(:search) in lower(concat_ws(' ', c.full_name, c.email_raw, c.phone_raw))) > 0
              AND (:campaign = '' OR lower(c.source_campaign) = lower(:campaign))
+             AND (:region = '' OR a.region_code = :region)
             """;
     private static final Map<String, String> BUCKETS = new LinkedHashMap<>();
     static {
@@ -125,7 +138,8 @@ public class AdminStatsService {
         var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*" + filter
                 + " AND c.id < :cursor ORDER BY c.id DESC LIMIT :size", params,
                 (rs, n) -> new CandidateRow(rs.getLong("candidate_id"), rs.getString("full_name"),
-                        rs.getString("email_raw"), rs.getString("phone_raw"), rs.getString("source_campaign"), performance(rs)));
+                        rs.getString("email_raw"), rs.getString("phone_raw"), rs.getString("source_campaign"), performance(rs),
+                        rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code"))));
         boolean more = rows.size() > size;
         var items = List.copyOf(rows.subList(0, Math.min(size, rows.size())));
         return new CandidatePage(items, total, more ? items.get(items.size() - 1).id() : null);
@@ -166,7 +180,7 @@ public class AdminStatsService {
                 + "WHERE a.id = ? AND a.candidate_id = ?", (rs, n) -> new AttemptDetail(summary(rs),
                         rs.getString("source_code"), rs.getString("prompt"), rs.getInt("difficulty"), rs.getInt("time_limit_seconds"),
                         rs.getString("starter_code"), rs.getString("reference_solution"), rs.getString("ip_address"),
-                        rs.getString("user_agent"), List.of(), EditorActivityCodec.decode(rs.getString("editor_activity_json")), null), attemptId, candidateId);
+                        rs.getString("user_agent"), List.of(), EditorActivityCodec.decode(rs.getString("editor_activity_json")), null, null), attemptId, candidateId);
         if (rows.isEmpty()) throw notFound();
         var a = rows.get(0);
         var cases = jdbc.query("""
@@ -179,8 +193,16 @@ public class AdminStatsService {
                         rs.getString("stdin"), rs.getString("expected_output"), (Boolean) rs.getObject("is_passed"),
                         rs.getString("judge_status"), (Integer) rs.getObject("exec_time_ms"), (Integer) rs.getObject("memory_kb"),
                         rs.getString("stdout_text")), attemptId);
-        return new AttemptDetail(a.summary(), a.sourceCode(), a.prompt(), a.difficulty(), a.timeLimitSeconds(),
-                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases, a.editorActivity(), checkpoints.history(attemptId, a.sourceCode()));
+        var timings = jdbc.query("""
+            SELECT s.id,r.ordinal,s.started_at,s.expires_at,s.finished_at,a.session_elapsed_ms
+            FROM challenge_platform.attempt a JOIN challenge_platform.challenge_session s ON s.id=a.challenge_session_id
+            JOIN challenge_platform.session_question r ON r.attempt_id=a.id WHERE a.id=?
+            """, (rs,n) -> new SessionTiming(rs.getLong("id"),rs.getInt("ordinal"),
+                rs.getObject("started_at",OffsetDateTime.class),rs.getObject("expires_at",OffsetDateTime.class),
+                rs.getObject("finished_at",OffsetDateTime.class),(Long)rs.getObject("session_elapsed_ms")),attemptId);
+        var timing = timings.isEmpty() ? null : timings.get(0);
+        return new AttemptDetail(a.summary(), a.sourceCode(), a.prompt(), a.difficulty(), timing == null ? a.timeLimitSeconds() : 600,
+                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases, a.editorActivity(), checkpoints.history(attemptId, a.sourceCode()), timing);
     }
 
     private static AttemptSummary summary(ResultSet rs) throws SQLException {

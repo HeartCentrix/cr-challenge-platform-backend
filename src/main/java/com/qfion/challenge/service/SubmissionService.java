@@ -158,6 +158,38 @@ public class SubmissionService {
                 .build();
     }
 
+    /** Durable queue: the answer is already committed; grading never delays the next question. */
+    @Transactional
+    public void gradeNextQueued() {
+        var ids = jdbc.queryForList("SELECT id FROM challenge_platform.attempt WHERE judge_status='QUEUED' AND (grading_next_at IS NULL OR grading_next_at <= clock_timestamp()) ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1", Long.class);
+        if (ids.isEmpty()) return;
+        var attempt = attemptRepo.findById(ids.get(0)).orElseThrow();
+        var q = questionRepo.findById(attempt.getQuestionId()).orElseThrow();
+        var cases = testcaseRepo.findByQuestionIdOrderByOrdinalAsc(q.getId());
+        int passed = 0;
+        BigDecimal points = BigDecimal.ZERO;
+        String lastStatus = null;
+        for (var tc : cases) {
+            var result = judge.execute(attempt.getSourceCode(), attempt.getJudgeLanguageId(), tc.getStdin(), tc.getExpectedOutput());
+            if (result.statusId() < 0 || result.statusId() >= 13) {
+                // Infrastructure failures are retried, not recorded as an incorrect answer.
+                jdbc.update("DELETE FROM challenge_platform.attempt_result WHERE attempt_id=?", attempt.getId());
+                jdbc.update("UPDATE challenge_platform.attempt SET grading_retries=grading_retries+1, grading_next_at=clock_timestamp()+interval '30 seconds', judge_status=CASE WHEN grading_retries >= 2 THEN 'GRADING_UNAVAILABLE' ELSE 'QUEUED' END WHERE id=?", attempt.getId());
+                return;
+            }
+            if (result.accepted()) { passed++; points = points.add(tc.getPoints()); }
+            lastStatus = result.statusDescription();
+            attemptResultRepo.save(AttemptResult.builder().attemptId(attempt.getId()).testcaseId(tc.getId())
+                .isPassed(result.accepted()).judgeStatus(result.statusDescription()).execTimeMs(result.execTimeMs())
+                .memoryKb(result.memoryKb()).stdoutText(result.stdout()).build());
+        }
+        Long elapsed = jdbc.queryForObject("SELECT session_elapsed_ms FROM challenge_platform.attempt WHERE id=?", Long.class, attempt.getId());
+        var bonus = speedBonus(points, elapsed, 600);
+        attempt.setTestcasesPassed(passed); attempt.setSpeedBonus(bonus);
+        attempt.setScore(points.add(bonus).setScale(2,RoundingMode.HALF_UP));
+        attempt.setJudgeStatus(lastStatus); attemptRepo.saveAndFlush(attempt);
+    }
+
     /** Up to speedBonusRatio of base points, scaled by how much of the time limit was left. */
     private BigDecimal speedBonus(BigDecimal basePoints, Long durationMs, Integer limitSeconds) {
         if (durationMs == null || limitSeconds == null || limitSeconds <= 0 || basePoints.signum() == 0) {

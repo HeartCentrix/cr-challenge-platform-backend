@@ -28,6 +28,26 @@ public class IpLocationLookup {
     }
     public boolean available() { return reader != null; }
 
+    /** State-level classification for authenticated admin reporting only. Never performs DNS/network lookups. */
+    public String region(String ip) {
+        if (reader == null) return null; // Unavailable is retryable; do not permanently classify as unknown.
+        var address = ClientIpAddress.parse(ip);
+        if (!ClientIpAddress.isPublic(address)) return "UNKNOWN";
+        try {
+            return regionFromRecord(reader.get(address, Map.class));
+        } catch (IOException error) { throw new IllegalStateException("IP-region lookup unavailable", error); }
+    }
+    static String regionFromRecord(Map<?,?> record) {
+        if (record == null || !(record.get("country") instanceof Map<?,?> country)
+                || !(country.get("iso_code") instanceof String code) || code.isBlank()) return "UNKNOWN";
+        if (!"US".equals(code)) return "NON_US";
+        if (!(record.get("subdivisions") instanceof java.util.List<?> divisions) || divisions.isEmpty()
+                || !(divisions.get(0) instanceof Map<?,?> state)) return "UNKNOWN";
+        String iso = state.get("iso_code") instanceof String value ? value : null;
+        String name = state.get("names") instanceof Map<?,?> names && names.get("en") instanceof String value ? value : null;
+        return CandidateRegions.stateCode(iso, name);
+    }
+
     public Optional<Location> lookup(String ip) {
         var address = ClientIpAddress.parse(ip);
         if (reader == null || !ClientIpAddress.isPublic(address)) return Optional.empty();

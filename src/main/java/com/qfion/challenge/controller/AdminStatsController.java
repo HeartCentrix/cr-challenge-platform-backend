@@ -17,23 +17,25 @@ public class AdminStatsController {
     public Overview overview(@RequestAttribute("authenticatedAdmin") String admin,
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "") String campaign,
+            @RequestParam(defaultValue = "") String region,
             @RequestParam(defaultValue = "") String startDate, @RequestParam(defaultValue = "") String endDate,
             @RequestParam(defaultValue = "UTC") String timeZone,
             @RequestParam(defaultValue = "0") double minPercent, @RequestParam(defaultValue = "100") double maxPercent,
             @RequestParam(defaultValue = "") String asOf) {
-        return stats.overview(new AdminStatsService.Filters(search, campaign, startDate, endDate, timeZone, minPercent, maxPercent, asOf));
+        return stats.overview(new AdminStatsService.Filters(search, campaign, startDate, endDate, timeZone, minPercent, maxPercent, asOf, region));
     }
 
     @GetMapping("/candidates")
     public CandidatePage list(@RequestAttribute("authenticatedAdmin") String admin,
             @RequestParam(defaultValue = "all") String bucket, @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "") String campaign,
+            @RequestParam(defaultValue = "") String region,
             @RequestParam(required = false) Long afterId, @RequestParam(defaultValue = "25") int size,
             @RequestParam(defaultValue = "") String startDate, @RequestParam(defaultValue = "") String endDate,
             @RequestParam(defaultValue = "UTC") String timeZone,
             @RequestParam(defaultValue = "0") double minPercent, @RequestParam(defaultValue = "100") double maxPercent,
             @RequestParam(defaultValue = "") String asOf) {
-        return stats.list(bucket, new AdminStatsService.Filters(search, campaign, startDate, endDate, timeZone, minPercent, maxPercent, asOf), afterId, size);
+        return stats.list(bucket, new AdminStatsService.Filters(search, campaign, startDate, endDate, timeZone, minPercent, maxPercent, asOf, region), afterId, size);
     }
 
     @GetMapping("/candidates/{id}")

@@ -44,7 +44,12 @@ public final class Dto {
             @Min(1) @Max(120) int sequence,
             @NotBlank @Size(max = 255) String slug,
             @NotNull @Size(max = 32000) String sourceCode,
-            @NotNull @Valid EditorActivity activity) {}
+            @NotNull @Valid EditorActivity activity,
+            @Pattern(regexp="[0-9a-fA-F-]{36}") String challengeToken, @Min(1) Integer ordinal) {
+        public ActivityCheckpointRequest(String token, int sequence, String slug, String sourceCode, EditorActivity activity) {
+            this(token,sequence,slug,sourceCode,activity,null,null);
+        }
+    }
 
     public record ClipboardCounts(
             @Min(0) @Max(1000000) int copy, @Min(0) @Max(1000000) int cut,

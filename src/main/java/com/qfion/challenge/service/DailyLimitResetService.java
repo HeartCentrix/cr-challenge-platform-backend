@@ -42,6 +42,8 @@ public class DailyLimitResetService {
                 return;
             }
             long id = candidate.get().getId();
+            // Revoke the old session before granting another slot; its timer must not continue.
+            jdbc.update("UPDATE challenge_platform.challenge_session SET finished_at=clock_timestamp(),finish_reason='RESET' WHERE candidate_id=? AND session_date=? AND finished_at IS NULL", id, today);
             // Remove both identity locks, including aliases previously used by this candidate.
             // Never remove attempts, results, candidates, or another day's locks.
             int removed = jdbc.update("DELETE FROM challenge_platform.daily_attempt_lock "

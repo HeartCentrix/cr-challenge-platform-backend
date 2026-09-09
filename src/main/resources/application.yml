@@ -44,7 +44,7 @@ challenge:
     cpu-time-limit-seconds: ${JUDGE_CPU_TIME_LIMIT:1.0}
   # Salt for hashing email/phone in daily_attempt_lock. Override per environment.
   identity-salt: ${IDENTITY_SALT}
-  # One attempt per identity per day.
+  # One global 10-minute session per identity per day (multiple answers within it).
   daily-attempt-limit: 1
   # Share of a question's points awarded for speed (0.20 = up to 20%).
   speed-bonus-ratio: 0.20

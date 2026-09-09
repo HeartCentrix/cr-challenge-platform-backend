@@ -62,7 +62,7 @@ class EditorActivityTest {
             """ + ACTIVITY + "}";
         MockMvcBuilders.standaloneSetup(new SubmissionController(service)).build()
                 .perform(post("/api/v1/submit").contentType(MediaType.APPLICATION_JSON).content(request))
-                .andExpect(status().isOk()).andExpect(content().json("{\"message\":\"Saved\"}", true));
-        verify(service).submit(argThat(req -> req.editorActivity().question().copy() == 1), any(), nullable(String.class));
+                .andExpect(status().isGone());
+        verifyNoInteractions(service);
     }
 }

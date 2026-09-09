@@ -14,7 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Opt-in local PostgreSQL integration test. All fixture rows roll back. */
-@SpringBootTest
+@SpringBootTest(properties={"challenge.sessions.workers-enabled=false","challenge.regions.backfill-enabled=false"})
 @EnabledIfEnvironmentVariable(named = "CHALLENGE_STATS_DB_TESTS", matches = "true")
 @Transactional(isolation = Isolation.REPEATABLE_READ)
 class AdminStatsDatabaseTest {
@@ -84,6 +84,19 @@ class AdminStatsDatabaseTest {
         assertThrows(ResponseStatusException.class, () -> stats.overview(new AdminStatsService.Filters("", "", "", "", "UTC", 80, 20, "")));
         assertThrows(ResponseStatusException.class, () -> stats.overview(new AdminStatsService.Filters("", "", "", "", "UTC", Double.NaN, 100, "")));
         assertEquals(latestAttempt, detail.attempts().items().get(0).id());
+        jdbc.update("UPDATE challenge_platform.attempt SET region_code='TX' WHERE candidate_id=?",firstCandidate);
+        jdbc.update("UPDATE challenge_platform.attempt SET region_code='CA' WHERE id=?",latestAttempt);
+        var california = new AdminStatsService.Filters(prefix,"","","","UTC",0,100,"","CA");
+        var regional = stats.list("all",california,null,1);
+        assertEquals(1,regional.total()); assertNull(regional.nextCursor());
+        assertEquals("California",regional.items().get(0).region());
+        assertEquals(2,regional.items().get(0).performance().attemptCount()); // Region selects candidates, not individual answers.
+        assertEquals(1,stats.overview(california).totalCandidates());
+        assertEquals(0,stats.overview(new AdminStatsService.Filters(prefix,"","","","UTC",0,100,"","TX")).totalCandidates());
+        assertEquals(1,stats.overview(new AdminStatsService.Filters(prefix,"","2000-01-01","2000-01-01","UTC",0,100,"","TX")).totalCandidates());
+        assertEquals(1,stats.overview(new AdminStatsService.Filters(prefix,"","","","UTC",0,100,"2000-12-31T00:00:00Z","TX")).totalCandidates());
+        assertEquals(7,stats.overview(new AdminStatsService.Filters(prefix,"","","","UTC",0,100,"","UNKNOWN")).totalCandidates());
+        assertThrows(ResponseStatusException.class,()->stats.overview(new AdminStatsService.Filters("","","","","UTC",0,100,"","' OR 1=1")));
         long testcase = jdbc.queryForObject("SELECT min(id) FROM challenge_platform.question_testcase WHERE question_id = ?", Long.class, question);
         jdbc.update("INSERT INTO challenge_platform.attempt_result(attempt_id,testcase_id,is_passed,stdout_text) VALUES (?, ?, false, 'saved output')", latestAttempt, testcase);
         var attempt = stats.attempt(firstCandidate, latestAttempt);

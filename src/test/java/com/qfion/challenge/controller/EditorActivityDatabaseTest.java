@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** Local-only submission/storage/admin round trip. Every fixture rolls back; judge is mocked. */
-@SpringBootTest
+@SpringBootTest(properties={"challenge.sessions.workers-enabled=false","challenge.regions.backfill-enabled=false"})
 @EnabledIfEnvironmentVariable(named = "CHALLENGE_STATS_DB_TESTS", matches = "true")
 @Transactional(isolation = Isolation.REPEATABLE_READ)
 class EditorActivityDatabaseTest {

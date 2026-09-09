@@ -8,11 +8,11 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import java.util.Map;
 
 /** Never echo source code or session capabilities in validation logs/responses. */
-@RestControllerAdvice(assignableTypes = ActivityCheckpointController.class)
+@RestControllerAdvice(assignableTypes = {ActivityCheckpointController.class, ChallengeSessionController.class})
 public class ActivityCheckpointErrors {
     @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
     public ResponseEntity<Map<String, String>> invalid(Exception error) {
         return ResponseEntity.badRequest().header("Cache-Control", "no-store")
-                .body(Map.of("error", "Invalid activity checkpoint."));
+                .body(Map.of("error", "Invalid challenge request."));
     }
 }
