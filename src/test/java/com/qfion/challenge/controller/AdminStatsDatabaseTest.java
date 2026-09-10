@@ -31,10 +31,12 @@ class AdminStatsDatabaseTest {
         int[][] cases = {{0,10},{1,4},{1,2},{3,4},{99,100},{1,1},{0,0},{1,3}};
         String[] groups = {"quarter","low","quarter","half","high","perfect","unavailable","quarter"};
         long firstCandidate = 0, latestAttempt = 0;
+        var candidateIds = new java.util.ArrayList<Long>();
         for (int i = 0; i < cases.length; i++) {
             String email = prefix + i + "@example.invalid";
             long candidate = jdbc.queryForObject("INSERT INTO challenge_platform.candidate(full_name,email_raw,email_normalised,phone_raw,phone_normalised) "
                     + "VALUES (?, ?, ?, '2025550196', '2025550196') RETURNING id", Long.class, prefix + i, email, email);
+            candidateIds.add(candidate);
             if (i == 0) {
                 firstCandidate = candidate;
                 insertAttempt(candidate, question, 10, 10, "2000-01-01");
@@ -58,6 +60,20 @@ class AdminStatsDatabaseTest {
         assertEquals(2, third.items().size());
         assertNull(third.nextCursor());
         assertEquals(8, java.util.stream.Stream.of(first, second, third).flatMap(p -> p.items().stream()).map(c -> c.id()).distinct().count());
+        assertEquals(List.of(candidateIds.get(5), candidateIds.get(0), candidateIds.get(4), candidateIds.get(3),
+                        candidateIds.get(2), candidateIds.get(7), candidateIds.get(1), candidateIds.get(6)),
+                java.util.stream.Stream.of(first, second, third).flatMap(p -> p.items().stream()).map(c -> c.id()).toList());
+        // The top tied scores span pages; the lower ID must not be skipped.
+        var tiedFirst = stats.list("all", filters(prefix), null, 1);
+        var tiedSecond = stats.list("all", filters(prefix), tiedFirst.nextCursor(), 1);
+        assertEquals(candidateIds.get(5), tiedFirst.items().get(0).id());
+        assertEquals(candidateIds.get(0), tiedSecond.items().get(0).id());
+        var recent = new AdminStatsService.Filters(prefix, "", "2001-01-01", "2001-01-01", "UTC", 0, 100, "");
+        var recentFirst = stats.list("all", recent, null, 1);
+        var recentSecond = stats.list("all", recent, recentFirst.nextCursor(), 1);
+        assertEquals(candidateIds.get(5), recentFirst.items().get(0).id());
+        assertEquals(candidateIds.get(4), recentSecond.items().get(0).id());
+        assertTrue(stats.list("all", filters(prefix), Long.MAX_VALUE, 3).items().isEmpty());
         assertEquals(0, stats.list("all", filters("' OR 1=1 --"), null, 25).total());
         var detail = stats.candidate(firstCandidate, 0, 10);
         assertEquals(2, detail.attempts().total());

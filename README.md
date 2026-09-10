@@ -263,7 +263,9 @@ Candidate score totals/averages include every selected submission; the headline
 average gives each candidate equal weight. No dates means all history.
 
 Candidate batches use `afterId` (the preceding response's `nextCursor`) ordered
-by descending candidate ID. Null `nextCursor` means stop, including empty results.
+by descending total score, then descending candidate ID to keep tied scores stable.
+The cursor's score is resolved within the same filters' date/asOf snapshot. Null
+`nextCursor` means stop, including empty results.
 Pass the same `asOf` ISO instant to the overview and every list batch to exclude
 submissions arriving after that view's snapshot. Filters are validated and bound
 SQL parameters; no candidate-submitted text is interpolated into SQL.

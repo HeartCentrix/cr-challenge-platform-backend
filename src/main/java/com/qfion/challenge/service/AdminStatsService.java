@@ -144,8 +144,14 @@ public class AdminStatsService {
                     AND marked.submitted_at >= :start AND marked.submitted_at < :end AND marked.submitted_at <= :asOf
                     AND position(:aiMarker in marked.source_code) > 0) AS ai_marker_detected
                 """;
+        // Resolve the preceding candidate's score in the same snapshot so paging
+        // follows score order, including ties, rather than candidate creation order.
+        String cursorFilter = afterId == null ? "" : """
+                 AND (a.total_score, c.id) <
+                   (SELECT total_score, candidate_id FROM classified WHERE candidate_id = :cursor)
+                """;
         var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*" + markerCheck + filter
-                + " AND c.id < :cursor ORDER BY c.id DESC LIMIT :size", params,
+                + cursorFilter + " ORDER BY a.total_score DESC, c.id DESC LIMIT :size", params,
                 (rs, n) -> new CandidateRow(rs.getLong("candidate_id"), rs.getString("full_name"),
                         rs.getString("email_raw"), rs.getString("phone_raw"), rs.getString("source_campaign"), performance(rs),
                         rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code")), rs.getBoolean("ai_marker_detected")));
