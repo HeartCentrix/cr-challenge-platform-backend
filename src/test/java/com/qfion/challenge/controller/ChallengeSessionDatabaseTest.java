@@ -100,14 +100,37 @@ class ChallengeSessionDatabaseTest {
     }
 
     @Test void resetRevokesOldSessionButKeepsSubmittedAnswers() {
-        sessions.start(request,"127.0.0.1","test");
+        assertFalse(sessions.start(request,"127.0.0.1","test").restartAllowed());
         sessions.answer(new SessionDto.Answer(token,1,"saved answer",null),"127.0.0.1","test");
         resets.reset(List.of(request.email()),"admin@codereport.com");
         var old=sessions.state(token);
         assertEquals("RESET",old.reason()); assertEquals(1,old.submittedAnswers());
+        assertTrue(old.restartAllowed());
+        assertTrue(sessions.start(request,"127.0.0.1","test").restartAllowed()); // Old tokens remain idempotent.
         assertEquals("FINISHED",sessions.answer(new SessionDto.Answer(token,2,"revoked",null),"127.0.0.1","test").status());
         var fresh=sessions.start(new SessionDto.Start(UUID.randomUUID().toString(),request.fullName(),request.email(),request.phone(),"test"),"127.0.0.1","test");
         assertEquals("ACTIVE",fresh.status()); assertEquals(0,fresh.submittedAnswers());
+        assertFalse(fresh.restartAllowed());
+        assertFalse(sessions.state(token).restartAllowed()); // The new daily slot is occupied.
+    }
+
+    @Test void resettingCompletedSessionAllowsRetestWithoutChangingItsHistory() {
+        sessions.start(request,"127.0.0.1","test");
+        sessions.answer(new SessionDto.Answer(token,1,"saved answer",null),"127.0.0.1","test");
+        var completed=sessions.finish(token);
+        assertFalse(completed.restartAllowed());
+        long oldId=id();
+        resets.reset(List.of(request.email()),"admin@codereport.com");
+        var reset=sessions.state(token);
+        assertTrue(reset.restartAllowed());
+        assertEquals(completed.reason(),reset.reason());
+        assertEquals(completed.finishedAt(),reset.finishedAt());
+        assertEquals(1,reset.submittedAnswers());
+        var fresh=sessions.start(new SessionDto.Start(UUID.randomUUID().toString(),request.fullName(),request.email(),request.phone(),"test"),"127.0.0.1","test");
+        assertEquals("ACTIVE",fresh.status());
+        assertEquals(Duration.ofMinutes(10),Duration.between(fresh.startedAt(),fresh.expiresAt()));
+        assertEquals("saved answer",jdbc.queryForObject("SELECT source_code FROM challenge_platform.attempt WHERE challenge_session_id=?",String.class,oldId));
+        assertFalse(sessions.state(token).restartAllowed());
     }
 
     @Test void unavailableJudgeIsRetriedWithoutDuplicatingCaseResults() {

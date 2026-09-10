@@ -132,14 +132,23 @@ public class AdminStatsService {
         validatePage(0, size);
         if (afterId != null && afterId <= 0) throw badRequest("Invalid candidate cursor.");
         if (!bucket.equals("all") && !BUCKETS.containsKey(bucket)) throw badRequest("Unknown percentage group.");
-        var params = parameters(filters).addValue("bucket", bucket).addValue("cursor", afterId == null ? Long.MAX_VALUE : afterId).addValue("size", size + 1);
+        var params = parameters(filters).addValue("bucket", bucket).addValue("cursor", afterId == null ? Long.MAX_VALUE : afterId).addValue("size", size + 1)
+                .addValue("aiMarker", AiSourceMarker.signature());
         String filter = FILTER + " AND (:bucket = 'all' OR a.bucket = :bucket)";
         long total = named.queryForObject(AGGREGATE + "SELECT count(*)" + filter, params, Long.class);
-        var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*" + filter
+        // Check only listed candidates' answers in the same date/snapshot scope.
+        // Keep source scans out of the overview/count aggregation.
+        String markerCheck = """
+                , EXISTS (SELECT 1 FROM challenge_platform.attempt marked
+                  WHERE marked.candidate_id = c.id
+                    AND marked.submitted_at >= :start AND marked.submitted_at < :end AND marked.submitted_at <= :asOf
+                    AND position(:aiMarker in marked.source_code) > 0) AS ai_marker_detected
+                """;
+        var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*" + markerCheck + filter
                 + " AND c.id < :cursor ORDER BY c.id DESC LIMIT :size", params,
                 (rs, n) -> new CandidateRow(rs.getLong("candidate_id"), rs.getString("full_name"),
                         rs.getString("email_raw"), rs.getString("phone_raw"), rs.getString("source_campaign"), performance(rs),
-                        rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code"))));
+                        rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code")), rs.getBoolean("ai_marker_detected")));
         boolean more = rows.size() > size;
         var items = List.copyOf(rows.subList(0, Math.min(size, rows.size())));
         return new CandidatePage(items, total, more ? items.get(items.size() - 1).id() : null);

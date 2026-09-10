@@ -163,7 +163,13 @@ public class ChallengeSessionService {
             detail = new Dto.QuestionDetail(q.getId(), q.getSlug(), q.getTitle(), q.getPrompt(), q.getDifficulty(), q.getLanguage(), q.getJudgeLanguageId(), q.getStarterCode(), 600, samples);
         }
         int submitted = jdbc.queryForObject("SELECT count(*) FROM challenge_platform.session_question WHERE session_id=? AND attempt_id IS NOT NULL", Integer.class, s.id());
-        return new SessionDto.State(active ? "ACTIVE" : "FINISHED", s.reason(), now, s.started(), s.expires(), s.finished(), submitted, r.ordinal(), detail, active ? r.draft() : null, r.revision());
+        // Reset may clear the daily lock after a session has already finished.
+        // Preserve its historical finish reason; derive restart eligibility from
+        // today's locks. A new start still enforces both email and phone limits.
+        boolean restartAllowed = !active && jdbc.queryForObject(
+                "SELECT count(*) FROM challenge_platform.daily_attempt_lock WHERE candidate_id=? AND attempt_date=?",
+                Long.class, s.candidateId(), LocalDate.now()) == 0;
+        return new SessionDto.State(active ? "ACTIVE" : "FINISHED", s.reason(), now, s.started(), s.expires(), s.finished(), submitted, r.ordinal(), detail, active ? r.draft() : null, r.revision(), restartAllowed);
     }
     private Session lock(String token) {
         var ids = jdbc.queryForList("SELECT id FROM challenge_platform.challenge_session WHERE token_hash=? FOR UPDATE", Long.class, ActivityCheckpointService.hashToken(token));

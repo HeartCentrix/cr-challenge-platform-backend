@@ -102,6 +102,17 @@ class AdminStatsDatabaseTest {
         var attempt = stats.attempt(firstCandidate, latestAttempt);
         assertEquals("fixture code", attempt.sourceCode());
         assertEquals("saved output", attempt.testcases().get(0).stdout());
+        assertFalse(attempt.aiMarkerDetected());
+        assertFalse(stats.list("all", filters(prefix), null, 25).items().stream().anyMatch(c -> c.aiMarkerDetected()));
+        String marker = "/*" + String.valueOf((char) 173).repeat(64) + "*/";
+        jdbc.update("UPDATE challenge_platform.attempt SET source_code = ? WHERE id = ?", "class Main { " + marker + " }", latestAttempt);
+        assertTrue(stats.attempt(firstCandidate, latestAttempt).aiMarkerDetected());
+        var flagged = stats.list("all", filters(prefix), null, 25).items().stream().filter(c -> c.aiMarkerDetected()).toList();
+        assertEquals(1, flagged.size());
+        assertEquals(firstCandidate, flagged.get(0).id());
+        assertFalse(stats.list("all", dateFilter, null, 25).items().get(0).aiMarkerDetected());
+        assertFalse(stats.list("all", new AdminStatsService.Filters(prefix,"","","","UTC",0,100,"2000-12-31T00:00:00Z"), null, 25).items().get(0).aiMarkerDetected());
+        assertTrue(stats.list("all", california, null, 25).items().get(0).aiMarkerDetected());
         long wrongCandidate = firstCandidate + 1;
         assertThrows(ResponseStatusException.class, () -> stats.attempt(wrongCandidate, attempt.summary().id()));
         assertThrows(ResponseStatusException.class, () -> stats.list("invalid", filters(""), null, 25));

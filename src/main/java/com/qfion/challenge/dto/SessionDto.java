@@ -19,5 +19,5 @@ public final class SessionDto {
     /** Never includes score, hidden tests, candidate details, or a bearer token. */
     public record State(String status, String reason, OffsetDateTime serverNow, OffsetDateTime startedAt,
         OffsetDateTime expiresAt, OffsetDateTime finishedAt, int submittedAnswers, int ordinal,
-        Dto.QuestionDetail question, String draftCode, int draftRevision) {}
+        Dto.QuestionDetail question, String draftCode, int draftRevision, boolean restartAllowed) {}
 }

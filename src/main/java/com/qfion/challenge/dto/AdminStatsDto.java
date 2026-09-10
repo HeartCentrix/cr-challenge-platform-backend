@@ -1,5 +1,7 @@
 package com.qfion.challenge.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.qfion.challenge.service.AiSourceMarker;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,7 +19,7 @@ public final class AdminStatsDto {
             OffsetDateTime submittedAt, Long durationMs, int testcasesPassed, int testcasesTotal,
             BigDecimal passPercentage, BigDecimal score, BigDecimal speedBonus, String judgeStatus) {}
     public record CandidateRow(long id, String fullName, String email, String phone, String sourceCampaign, Performance performance,
-            String regionCode, String region) {}
+            String regionCode, String region, boolean aiMarkerDetected) {}
     public record CandidateDetail(long id, String fullName, String email, String phone, boolean consented,
             String sourceCampaign, OffsetDateTime firstSeenAt, OffsetDateTime lastSeenAt,
             Performance performance, Page<AttemptSummary> attempts) {}
@@ -26,7 +28,11 @@ public final class AdminStatsDto {
     public record AttemptDetail(AttemptSummary summary, String sourceCode, String prompt, int difficulty,
             int timeLimitSeconds, String starterCode, String referenceSolution, String ipAddress,
             String userAgent, List<CaseResult> testcases, Dto.EditorActivity editorActivity,
-            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory, SessionTiming sessionTiming) {}
+            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory, SessionTiming sessionTiming) {
+        /** Derived from the saved answer, never a client-supplied detection flag. */
+        @JsonProperty("aiMarkerDetected")
+        public boolean aiMarkerDetected() { return AiSourceMarker.detected(sourceCode); }
+    }
     public record SessionTiming(long sessionId, int questionNumber, OffsetDateTime startedAt,
             OffsetDateTime expiresAt, OffsetDateTime finishedAt, Long elapsedMs) {}
 }

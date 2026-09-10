@@ -57,7 +57,7 @@ public final class Dto {
 
     public record ActivityEvent(
             @Min(0) @Max(86400000) long offsetMs,
-            @NotNull @Pattern(regexp = "key-(character|delete|layout|navigation|shortcut)|composition|model-change|bulk-change|bulk-unexplained|unexplained-change|unobserved-change|undo|redo|(copy|cut|paste|drop)-blocked|paste-observed") String kind,
+            @NotNull @Pattern(regexp = "key-(character|delete|layout|navigation|shortcut)|composition|model-change|bulk-change|bulk-unexplained|unexplained-change|unobserved-change|undo|redo|(copy|cut|paste|drop)-blocked|(copy|cut|paste)-observed") String kind,
             @NotNull @Pattern(regexp = "question|answer") String area,
             Boolean trusted, @Min(0) @Max(10000000) Integer inserted, @Min(0) @Max(10000000) Integer deleted) {}
 

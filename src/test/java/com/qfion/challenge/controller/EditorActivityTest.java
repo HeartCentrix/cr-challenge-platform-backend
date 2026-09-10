@@ -42,6 +42,11 @@ class EditorActivityTest {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var validator = factory.getValidator();
             assertTrue(validator.validate(JSON.readValue(ACTIVITY, Dto.EditorActivity.class)).isEmpty());
+            for (String kind : new String[] { "copy-observed", "cut-observed", "paste-observed", "copy-blocked", "drop-blocked" }) {
+                var report = JSON.readValue(ACTIVITY.replace("key-character", kind), Dto.EditorActivity.class);
+                assertTrue(validator.validate(report).isEmpty(), kind);
+                assertEquals(report, EditorActivityCodec.decode(EditorActivityCodec.encode(report, "test-question")));
+            }
             for (String bad : new String[] { ACTIVITY.replace("\"copy\":1", "\"copy\":-1"),
                     ACTIVITY.replace("key-character", "literal-password"), ACTIVITY.replace("\"version\":1", "\"version\":2") }) {
                 assertFalse(validator.validate(JSON.readValue(bad, Dto.EditorActivity.class)).isEmpty());

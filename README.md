@@ -1,5 +1,28 @@
 # Challenge Platform Backend
 
+## AI-used marker review
+
+The private admin attempt response derives `aiMarkerDetected` from the exact saved
+source code. The candidate table checks for the same marker in any submitted answer
+within its date/time-zone and `asOf` snapshot. A match is displayed as `AI-used` in
+the table, attempt details and Excel exports. Scores and submission acceptance are
+unchanged; this is a review signal, not proof of cheating. No marker does not rule
+out AI use, and copying or deliberately inserting it can cause a match.
+
+The frontend requests a harmless Java block comment containing exactly 64 soft
+hyphens (U+00AD). These characters normally render invisibly and survive both UTF8
+and the local WIN1252 database. `AiSourceMarker` and `frontend/public/app.js` use
+this v1 signature. Match the full comment, not arbitrary invisible characters. Detection uses stored
+source, not a client-supplied flag. Existing source storage preserves the marker;
+no database migration is required. Both JavaScript and backend signatures must stay
+in sync. Retain older signatures when adding future versions.
+
+This is best effort: screenshot-based tools cannot read hidden DOM text, models
+can ignore the instruction, and editors or tools may reveal or strip invisible
+characters. The application never adds the marker to starter code, drafts or
+submitted code itself. Only the hidden question instruction contains it. No public
+candidate API exposes the detection flag.
+
 ## Admin candidate regions
 
 Apply `db/10_candidate_regions.sql` after migration 09 before deploying this backend.
