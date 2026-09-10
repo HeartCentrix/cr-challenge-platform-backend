@@ -22,7 +22,8 @@ public final class AdminStatsDto {
             String regionCode, String region, boolean aiMarkerDetected) {}
     public record CandidateDetail(long id, String fullName, String email, String phone, boolean consented,
             String sourceCampaign, OffsetDateTime firstSeenAt, OffsetDateTime lastSeenAt,
-            Performance performance, Page<AttemptSummary> attempts) {}
+            Performance performance, Page<AttemptSummary> attempts, AttemptDayNavigation history) {}
+    public record AttemptDayNavigation(String day, String previousDay, String nextDay, String asOf) {}
     public record CaseResult(long id, int ordinal, boolean sample, String stdin, String expectedOutput,
             Boolean passed, String judgeStatus, Integer execTimeMs, Integer memoryKb, String stdout) {}
     public record AttemptDetail(AttemptSummary summary, String sourceCode, String prompt, int difficulty,

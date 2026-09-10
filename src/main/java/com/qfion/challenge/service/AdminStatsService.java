@@ -185,7 +185,35 @@ public class AdminStatsService {
         var performance = performances.isEmpty() ? new Performance(0, 0, 0, 0, null,
                 java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, null, null) : performances.get(0);
         return new CandidateDetail(id, c.getFullName(), c.getEmailRaw(), c.getPhoneRaw(), Boolean.TRUE.equals(c.getIsConsented()),
-                c.getSourceCampaign(), c.getFirstSeenAt(), c.getLastSeenAt(), performance, new Page<>(attempts, total, page, size));
+                c.getSourceCampaign(), c.getFirstSeenAt(), c.getLastSeenAt(), performance, new Page<>(attempts, total, page, size), null);
+    }
+
+    /** Browse every submission day, starting with the latest non-empty day. */
+    public CandidateDetail candidateHistory(long id, int page, int size, String day, String timeZone, String asOf) {
+        validatePage(page, size);
+        var params = parameters(new Filters("", "", day, day, timeZone, 0, 100, asOf)).addValue("id", id);
+        var zone = java.time.ZoneId.of(timeZone);
+        var snapshot = ((java.sql.Timestamp) params.getValue("asOf")).toInstant().toString();
+        String selectedDay = day;
+        if (selectedDay.isBlank()) {
+            var latest = named.queryForObject("SELECT max(submitted_at) FROM challenge_platform.attempt "
+                    + "WHERE candidate_id = :id AND submitted_at <= :asOf", params, java.sql.Timestamp.class);
+            selectedDay = latest == null ? "" : latest.toInstant().atZone(zone).toLocalDate().toString();
+        }
+        var detail = candidate(id, page, size, selectedDay, timeZone, snapshot);
+        String previousDay = null, nextDay = null;
+        if (!selectedDay.isBlank()) {
+            params = parameters(new Filters("", "", selectedDay, selectedDay, timeZone, 0, 100, snapshot)).addValue("id", id);
+            var previous = named.queryForObject("SELECT max(submitted_at) FROM challenge_platform.attempt "
+                    + "WHERE candidate_id = :id AND submitted_at < :start AND submitted_at <= :asOf", params, java.sql.Timestamp.class);
+            var next = named.queryForObject("SELECT min(submitted_at) FROM challenge_platform.attempt "
+                    + "WHERE candidate_id = :id AND submitted_at >= :end AND submitted_at <= :asOf", params, java.sql.Timestamp.class);
+            previousDay = previous == null ? null : previous.toInstant().atZone(zone).toLocalDate().toString();
+            nextDay = next == null ? null : next.toInstant().atZone(zone).toLocalDate().toString();
+        }
+        return new CandidateDetail(detail.id(), detail.fullName(), detail.email(), detail.phone(), detail.consented(),
+                detail.sourceCampaign(), detail.firstSeenAt(), detail.lastSeenAt(), detail.performance(), detail.attempts(),
+                new AttemptDayNavigation(selectedDay.isBlank() ? null : selectedDay, previousDay, nextDay, snapshot));
     }
 
     public AttemptDetail attempt(long candidateId, long attemptId) {

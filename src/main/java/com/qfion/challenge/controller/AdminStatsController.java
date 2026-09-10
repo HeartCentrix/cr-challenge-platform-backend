@@ -46,6 +46,14 @@ public class AdminStatsController {
         return stats.candidate(id, page, size, day, timeZone, asOf);
     }
 
+    @GetMapping("/candidates/{id}/history")
+    public CandidateDetail history(@RequestAttribute("authenticatedAdmin") String admin, @PathVariable long id,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String day, @RequestParam(defaultValue = "UTC") String timeZone,
+            @RequestParam(defaultValue = "") String asOf) {
+        return stats.candidateHistory(id, page, size, day, timeZone, asOf);
+    }
+
     @GetMapping("/candidates/{id}/attempts/{attemptId}")
     public AttemptDetail attempt(@RequestAttribute("authenticatedAdmin") String admin, @PathVariable long id,
             @PathVariable long attemptId) { return stats.attempt(id, attemptId); }

@@ -163,11 +163,47 @@ class AdminStatsDatabaseTest {
             assertEquals(100, first.performance().totalScore().doubleValue());
             assertEquals(start, second.attempts().items().get(0).submittedAt().toInstant());
             assertEquals(end.minusSeconds(1), first.attempts().items().get(0).submittedAt().toInstant());
+            var history = stats.candidateHistory(candidate, 0, 1, scenario[0], scenario[1], "");
+            assertEquals(day.minusDays(1).toString(), history.history().previousDay());
+            assertEquals(day.plusDays(1).toString(), history.history().nextDay());
+            var snapshotHistory = stats.candidateHistory(candidate, 0, 1, "", scenario[1], end.minusSeconds(1).toString());
+            assertEquals(scenario[0], snapshotHistory.history().day());
+            assertNull(snapshotHistory.history().nextDay());
         }
         var empty = stats.candidate(candidate, 0, 10, "1999-01-01", "Asia/Kolkata", "");
         assertEquals(0, empty.attempts().total()); assertTrue(empty.attempts().items().isEmpty());
         assertEquals(0, empty.performance().attemptCount()); assertNull(empty.performance().passPercentage());
         assertThrows(ResponseStatusException.class, () -> stats.candidate(candidate, 0, 10, "invalid", "UTC", ""));
+    }
+
+    @Test void historyStartsAtLatestAttemptDayAndSkipsEmptyDaysWithStablePaging() {
+        assertTrue(List.of("127.0.0.1", "::1").contains(jdbc.queryForObject("SELECT host(inet_server_addr())", String.class)));
+        long question = jdbc.queryForObject("SELECT min(id) FROM challenge_platform.question", Long.class);
+        String email = "history-" + UUID.randomUUID() + "@example.invalid";
+        long candidate = jdbc.queryForObject("INSERT INTO challenge_platform.candidate(full_name,email_raw,email_normalised,phone_raw,phone_normalised) "
+                + "VALUES ('History fixture', ?, ?, '2025550196', '2025550196') RETURNING id", Long.class, email, email);
+        var empty = stats.candidateHistory(candidate, 0, 10, "", "Asia/Kolkata", "");
+        assertNull(empty.history().day()); assertNull(empty.history().previousDay()); assertNull(empty.history().nextDay());
+        assertEquals(0, empty.attempts().total());
+        long old = insertAttempt(candidate, question, 1, 2, "2001-01-01");
+        long latest = insertAttempt(candidate, question, 2, 2, "2001-01-05");
+        long tied = insertAttempt(candidate, question, 2, 2, "2001-01-05");
+        var first = stats.candidateHistory(candidate, 0, 1, "", "Asia/Kolkata", "2001-02-01T00:00:00Z");
+        assertEquals("2001-01-05", first.history().day()); assertEquals("2001-01-01", first.history().previousDay());
+        assertNull(first.history().nextDay()); assertEquals(2, first.attempts().total());
+        assertEquals(tied, first.attempts().items().get(0).id()); assertEquals(200, first.performance().totalScore().doubleValue());
+        var second = stats.candidateHistory(candidate, 1, 1, "", "Asia/Kolkata", first.history().asOf());
+        assertEquals(latest, second.attempts().items().get(0).id());
+        var previous = stats.candidateHistory(candidate, 0, 10, first.history().previousDay(), "Asia/Kolkata", first.history().asOf());
+        assertEquals(old, previous.attempts().items().get(0).id()); assertNull(previous.history().previousDay());
+        assertEquals("2001-01-05", previous.history().nextDay());
+        insertAttempt(candidate, question, 2, 2, "2001-03-01");
+        assertEquals("2001-01-05", stats.candidateHistory(candidate, 0, 10, "", "Asia/Kolkata", first.history().asOf()).history().day());
+        assertEquals("2001-03-01", stats.candidateHistory(candidate, 0, 10, "", "Asia/Kolkata", "").history().day());
+        assertThrows(ResponseStatusException.class, () -> stats.candidateHistory(candidate, 0, 10, "bad-date", "UTC", ""));
+        assertThrows(ResponseStatusException.class, () -> stats.candidateHistory(candidate, 0, 10, "", "bad-zone", ""));
+        assertThrows(ResponseStatusException.class, () -> stats.candidateHistory(candidate, -1, 10, "", "UTC", ""));
+        assertThrows(ResponseStatusException.class, () -> stats.candidateHistory(Long.MAX_VALUE, 0, 10, "", "UTC", ""));
     }
 
     private long insertAttempt(long candidate, long question, int passed, int total, String date) {
