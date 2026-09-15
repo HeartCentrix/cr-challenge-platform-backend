@@ -19,10 +19,11 @@ public final class AdminStatsDto {
             OffsetDateTime submittedAt, Long durationMs, int testcasesPassed, int testcasesTotal,
             BigDecimal passPercentage, BigDecimal score, BigDecimal speedBonus, String judgeStatus) {}
     public record CandidateRow(long id, String fullName, String email, String phone, String sourceCampaign, Performance performance,
-            String regionCode, String region, boolean aiMarkerDetected) {}
+            String regionCode, String region, boolean aiMarkerDetected, CrnMatch crn) {}
+    public record CrnMatch(String status, Boolean emailMatch, Boolean phoneMatch, OffsetDateTime checkedAt) {}
     public record CandidateDetail(long id, String fullName, String email, String phone, boolean consented,
             String sourceCampaign, OffsetDateTime firstSeenAt, OffsetDateTime lastSeenAt,
-            Performance performance, Page<AttemptSummary> attempts, AttemptDayNavigation history) {}
+            Performance performance, Page<AttemptSummary> attempts, AttemptDayNavigation history, CrnMatch crn) {}
     public record AttemptDayNavigation(String day, String previousDay, String nextDay, String asOf) {}
     public record CaseResult(long id, int ordinal, boolean sample, String stdin, String expectedOutput,
             Boolean passed, String judgeStatus, Integer execTimeMs, Integer memoryKb, String stdout) {}

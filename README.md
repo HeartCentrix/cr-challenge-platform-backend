@@ -1,5 +1,13 @@
 # Challenge Platform Backend
 
+## CRN matching
+
+Candidate email/phone matching against Fion nonprod runs in a separate private
+Lambda once per minute, not in this API process. See
+[CRN deployment and security](infra/crn/README.md). Migration `db/16_candidate_crn.sql`
+queues requests transactionally; authenticated admin responses expose only match
+flags. The API has no Fion credentials. Lambda deploys independently of the web apps.
+
 ## AI-used marker review
 
 The private admin attempt response derives `aiMarkerDetected` from the exact saved
