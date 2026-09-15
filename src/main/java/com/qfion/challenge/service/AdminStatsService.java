@@ -92,6 +92,7 @@ public class AdminStatsService {
     }
     private static final String FILTER = """
              FROM classified a JOIN challenge_platform.candidate c ON c.id = a.candidate_id
+             LEFT JOIN challenge_platform.candidate_crn_match crn ON crn.candidate_id=c.id
              WHERE (a.pass_percentage BETWEEN :min AND :max
                OR (a.pass_percentage IS NULL AND :min = 0 AND :max = 100))
              AND position(lower(:search) in lower(concat_ws(' ', c.full_name, c.email_raw, c.phone_raw))) > 0
@@ -151,11 +152,11 @@ public class AdminStatsService {
                  AND (a.total_score, c.id) <
                    (SELECT total_score, candidate_id FROM classified WHERE candidate_id = :cursor)
                 """;
-        var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*" + markerCheck + filter
+        var rows = named.query(AGGREGATE + "SELECT c.id, c.full_name, c.email_raw, c.phone_raw, c.source_campaign, a.*, crn.status AS crn_status, crn.email_match, crn.phone_match, crn.checked_at" + markerCheck + filter
                 + cursorFilter + " ORDER BY a.total_score DESC, c.id DESC LIMIT :size", params,
                 (rs, n) -> new CandidateRow(rs.getLong("candidate_id"), rs.getString("full_name"),
                         rs.getString("email_raw"), rs.getString("phone_raw"), rs.getString("source_campaign"), performance(rs),
-                        rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code")), rs.getBoolean("ai_marker_detected")));
+                        rs.getString("region_code"), CandidateRegions.label(rs.getString("region_code")), rs.getBoolean("ai_marker_detected"), crn(rs)));
         boolean more = rows.size() > size;
         var items = List.copyOf(rows.subList(0, Math.min(size, rows.size())));
         return new CandidatePage(items, total, more ? items.get(items.size() - 1).id() : null);
@@ -186,7 +187,7 @@ public class AdminStatsService {
         var performance = performances.isEmpty() ? new Performance(0, 0, 0, 0, null,
                 java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO, null, null) : performances.get(0);
         return new CandidateDetail(id, c.getFullName(), c.getEmailRaw(), c.getPhoneRaw(), Boolean.TRUE.equals(c.getIsConsented()),
-                c.getSourceCampaign(), c.getFirstSeenAt(), c.getLastSeenAt(), performance, new Page<>(attempts, total, page, size), null);
+                c.getSourceCampaign(), c.getFirstSeenAt(), c.getLastSeenAt(), performance, new Page<>(attempts, total, page, size), null, candidateCrn(id));
     }
 
     /** Browse every submission day, starting with the latest non-empty day. */
@@ -214,7 +215,18 @@ public class AdminStatsService {
         }
         return new CandidateDetail(detail.id(), detail.fullName(), detail.email(), detail.phone(), detail.consented(),
                 detail.sourceCampaign(), detail.firstSeenAt(), detail.lastSeenAt(), detail.performance(), detail.attempts(),
-                new AttemptDayNavigation(selectedDay.isBlank() ? null : selectedDay, previousDay, nextDay, snapshot));
+                new AttemptDayNavigation(selectedDay.isBlank() ? null : selectedDay, previousDay, nextDay, snapshot), detail.crn());
+    }
+
+    private static CrnMatch crn(ResultSet rs) throws SQLException {
+        String status=rs.getString("crn_status");
+        return new CrnMatch(status==null?"NOT_CHECKED":status,rs.getObject("email_match",Boolean.class),
+                rs.getObject("phone_match",Boolean.class),rs.getObject("checked_at",OffsetDateTime.class));
+    }
+    private CrnMatch candidateCrn(long id) {
+        var rows=jdbc.query("SELECT status AS crn_status,email_match,phone_match,checked_at FROM challenge_platform.candidate_crn_match WHERE candidate_id=?",
+                (rs,n)->crn(rs),id);
+        return rows.isEmpty()?new CrnMatch("NOT_CHECKED",null,null,null):rows.get(0);
     }
 
     public AttemptDetail attempt(long candidateId, long attemptId) {

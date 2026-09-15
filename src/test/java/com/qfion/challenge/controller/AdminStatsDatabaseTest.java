@@ -21,6 +21,29 @@ class AdminStatsDatabaseTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired AdminStatsService stats;
 
+    @Test void crnRequestsAreAutomaticAndAdminResultsDistinguishEveryMatchState() {
+        assertTrue(List.of("127.0.0.1","::1").contains(jdbc.queryForObject("SELECT host(inet_server_addr())",String.class)));
+        String email="crn-"+UUID.randomUUID()+"@example.invalid";
+        long candidate=jdbc.queryForObject("INSERT INTO challenge_platform.candidate(full_name,email_raw,email_normalised,phone_raw,phone_normalised) VALUES ('CRN fixture',?,?,'2025550196','2025550196') RETURNING id",Long.class,email,email);
+        long question=jdbc.queryForObject("SELECT min(id) FROM challenge_platform.question",Long.class);
+        insertAttempt(candidate,question,1,2,"2001-01-01");
+        var pending=stats.candidate(candidate,0,10).crn();
+        assertEquals("PENDING",pending.status());assertNull(pending.emailMatch());assertNull(pending.phoneMatch());
+        for(boolean emailMatch:List.of(true,false))for(boolean phoneMatch:List.of(true,false)) {
+            jdbc.update("UPDATE challenge_platform.candidate_crn_match SET status='CHECKED',email_match=?,phone_match=?,checked_at=clock_timestamp() WHERE candidate_id=?",emailMatch,phoneMatch,candidate);
+            var listed=stats.list("all",filters(email),null,25).items().get(0).crn();
+            assertEquals("CHECKED",listed.status());assertEquals(emailMatch,listed.emailMatch());assertEquals(phoneMatch,listed.phoneMatch());assertNotNull(listed.checkedAt());
+            assertEquals(listed,stats.candidateHistory(candidate,0,10,"","UTC","").crn());
+        }
+        jdbc.update("UPDATE challenge_platform.candidate SET phone_raw='+1 2025550196' WHERE id=?",candidate);
+        var reset=stats.candidate(candidate,0,10).crn();
+        assertEquals("PENDING",reset.status());assertNull(reset.emailMatch());assertNull(reset.checkedAt());
+        assertEquals(2L,jdbc.queryForObject("SELECT version FROM challenge_platform.candidate_crn_match WHERE candidate_id=?",Long.class,candidate));
+        jdbc.update("UPDATE challenge_platform.candidate_crn_match SET status='ERROR',attempts=5 WHERE candidate_id=?",candidate);
+        assertEquals("ERROR",stats.candidate(candidate,0,10).crn().status());
+        assertFalse(jdbc.queryForObject("SELECT has_table_privilege('challenge_app','challenge_platform.candidate_crn_match','UPDATE')",Boolean.class));
+    }
+
     @Test void countsOverallCandidatesAndSupportsFiltersCursorPaginationAndDetails() {
         String server = jdbc.queryForObject("SELECT host(inet_server_addr())", String.class);
         assertTrue("127.0.0.1".equals(server) || "::1".equals(server), "Fixtures are local-only");
