@@ -29,7 +29,8 @@ public final class AdminStatsDto {
     public record AttemptDetail(AttemptSummary summary, String sourceCode, String prompt, int difficulty,
             int timeLimitSeconds, String starterCode, String referenceSolution, String ipAddress,
             String userAgent, List<CaseResult> testcases, Dto.EditorActivity editorActivity,
-            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory, SessionTiming sessionTiming) {
+            com.qfion.challenge.service.ActivityCheckpointService.History checkpointHistory, SessionTiming sessionTiming,
+            List<com.qfion.challenge.service.FollowupService.Review> followups) {
         /** Derived from the saved answer, never a client-supplied detection flag. */
         @JsonProperty("aiMarkerDetected")
         public boolean aiMarkerDetected() { return AiSourceMarker.detected(sourceCode); }

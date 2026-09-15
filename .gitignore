@@ -14,3 +14,7 @@ application-local.yml
 geoip/*.mmdb
 geoip/*.gz
 geoip/*.part
+
+# Local question-bank validation bytecode.
+__pycache__/
+*.pyc

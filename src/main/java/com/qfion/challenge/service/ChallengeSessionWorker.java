@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class ChallengeSessionWorker {
     private final ChallengeSessionService sessions;
     private final SubmissionService submissions;
+    private final FollowupService followups;
     @Scheduled(initialDelay=10000,fixedDelay=1000) public void expire() {
         try { for (int i=0;i<10 && sessions.expireOne();i++) { /* bounded expiry batch */ } }
         catch (RuntimeException error) { log.warn("Challenge session expiry will be retried."); }
@@ -20,5 +21,9 @@ public class ChallengeSessionWorker {
     @Scheduled(initialDelay=10000,fixedDelay=1000) public void grade() {
         try { submissions.gradeNextQueued(); }
         catch (RuntimeException error) { log.warn("Queued challenge grading will be retried."); }
+    }
+    @Scheduled(initialDelay=10000,fixedDelay=1000) public void gradeDebug() {
+        try { followups.gradeNextQueued(); }
+        catch (RuntimeException error) { log.warn("Queued DEBUG grading will be retried."); }
     }
 }

@@ -42,7 +42,7 @@ class AiSourceMarkerTest {
     @Test void adminResponseDerivesFlagFromSourceAndPreservesInvisibleCharacters() throws Exception {
         var mapper = new ObjectMapper();
         for (var source : List.of("class Main {}", "class Main { " + MARKER + " }")) {
-            var detail = new AttemptDetail(null, source, "Prompt", 8, 600, "", "", null, null, List.of(), null, null, null);
+            var detail = new AttemptDetail(null, source, "Prompt", 8, 600, "", "", null, null, List.of(), null, null, null, List.of());
             var json = mapper.readTree(mapper.writeValueAsString(detail));
             assertEquals(source, json.get("sourceCode").asText());
             assertEquals(source.contains(MARKER), json.get("aiMarkerDetected").asBoolean());

@@ -31,7 +31,7 @@ public class QuestionController {
 
     @GetMapping("/{slug}")
     public ResponseEntity<Dto.QuestionDetail> detail(@PathVariable String slug) {
-        return questionRepo.findBySlugAndIsActiveTrue(slug)
+        return questionRepo.findEligibleBySlug(slug)
                 .map(this::toDetail)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

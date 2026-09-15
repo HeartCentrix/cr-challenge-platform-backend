@@ -30,6 +30,9 @@ public class ChallengeSessionController {
     @PostMapping("/draft") public ResponseEntity<Void> draft(@Valid @RequestBody SessionDto.Draft req, HttpServletRequest http) {
         limits.rateLimit(ip(http)); sessions.draft(req); return ResponseEntity.noContent().header("Cache-Control","no-store").build();
     }
+    @PostMapping("/followup-answer") public ResponseEntity<SessionDto.State> followup(@Valid @RequestBody SessionDto.FollowupAnswer req, HttpServletRequest http) {
+        limits.rateLimit(ip(http)); return response(sessions.followup(req));
+    }
     @PostMapping("/finish") public ResponseEntity<SessionDto.State> finish(@Valid @RequestBody SessionDto.Access req, HttpServletRequest http) {
         limits.rateLimit(ip(http)); return response(sessions.finish(req.token()));
     }

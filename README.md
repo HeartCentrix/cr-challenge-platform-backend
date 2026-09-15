@@ -1,5 +1,94 @@
 # Challenge Platform Backend
 
+## Coding / five-follow-up race
+
+Apply `db/12_question_followups.sql`, then `db/13_seed_question_followups.sql`,
+then `db/14_executable_debug_followups.sql` and `db/15_optional_answers.sql`
+as the challenge database owner after migration 11. Deploy the matching backend
+and frontend together. These migrations have been applied locally; applying a
+migration locally does not deploy AWS code. No coding questions are deleted or
+deactivated: all 200 remain stored. Exactly 20 currently have complete, enabled
+sets of five follow-ups (100 authored follow-ups). Rebuild the seed offline with
+`python db/bank200/build_followups.py`; conflicting saved authoring is not overwritten.
+
+New sessions explicitly use flow version 2:
+`CODING -> FOLLOW_UP 1 -> 2 -> 3 -> 4 -> 5 -> next CODING`.
+The same server-controlled ten-minute deadline covers every step, network delay
+and refresh. Code is queued asynchronously; candidates do not wait for grading to
+start follow-ups. Only after the fifth answer is saved can another random,
+nonrepeated eligible question be issued. Existing version-1 sessions keep their
+old flow until finished. Keep migrations additive and deploy both clients together.
+
+`POST /api/v1/challenge-sessions/followup-answer` takes the session bearer token,
+coding `ordinal`, `followupOrdinal` (1..5), and `answers` (string array). Text styles
+take one string, MCQ takes one option ID, and drag/drop takes option IDs in slot
+order with each piece used at most once (empty slots are allowed). Answers are optional:
+`answers: []` skips a follow-up, while blank coding source or unchanged starter code
+skips the coding answer. Unchanged DEBUG starter snippets are also skipped. Skips
+are saved as `SKIPPED`, receive no credit and are never sent to Judge. Candidates
+advance using the same submit button; the five-follow-up sequence and global
+deadline still apply. Partial drag/drop answers are saved as incorrect.
+Session locks serialize updates; retries cannot
+duplicate code attempts or follow-up answers. Refresh uses the existing `/state`
+endpoint, which includes `phase` and only the current public follow-up. Unsubmitted
+follow-up text is not autosaved; submitted answers survive refresh. At expiry,
+unanswered follow-ups stay unanswered and no new coding question is issued.
+
+Eligibility is enforced in the database-backed backend selection, not client-side
+filtering. A question needs all five enabled ordinals before the random question,
+slug detail, or new session selection can present it. Already-issued follow-ups
+are snapshotted with their coding round so future authoring edits do not alter
+ongoing/historical attempts. No candidate response contains the private answer
+key, rubric or review result. Existing hidden coding cases remain private.
+
+FIB, MCQ and ordered placements are checked separately from coding scores. Short
+explanations (`SHORT_ANSWER`, displayed as Essay) are marked `NEEDS_REVIEW`.
+Coding scores and leaderboard calculations are
+unchanged pending a separate scoring decision. The authenticated candidate
+attempt report and selected-day Excel export include the five snapshots, answers,
+timestamps (admin local time zone), structured check status and staff review guide.
+Authoring and persisting human review decisions are not exposed as admin editing
+workflows in this phase; staff can inspect the saved answers and rubric.
+
+### Executable DEBUG follow-ups
+
+Each new issued set includes one DEBUG snippet. The candidate edits only its
+buggy Java method body, not a whole class. Every snippet is derived from its linked
+coding question's algorithm and uses Java (Judge language 62). The public `debug` object supplies
+`starterCode`, `prefix`, `suffix`, and `languageId`. The frontend assembles
+`prefix + answers[0] + suffix` as `sourceCode` on the same follow-up answer request.
+The backend checks this exact assembly against the issued snapshot; client-selected
+wrappers, test inputs, expected outputs and language IDs are never trusted.
+Only the server holds `debug_tests`. All execution happens in Judge, never in the browser
+or backend process. The snippet is limited to 2,000 characters, the assembled source to 100,000.
+
+Saving advances immediately to the next follow-up while a durable `QUEUED` record
+is graded by the existing Judge client. Ten test cases must pass for `CORRECT`;
+otherwise it is `INCORRECT`. Infrastructure failures retry after 30 seconds (three
+attempts total), then remain `GRADING_UNAVAILABLE`, not an incorrect candidate answer.
+Admin detail and Excel expose the original snippet, submitted snippet, wrapped source,
+test status/counts and timing. Candidate endpoints do not expose the results or score.
+Sessions issued before migration 14 retain their original text-only DEBUG snapshot
+and manual review behavior; no existing answers are rewritten.
+
+`python db/bank200/build_debug_followups.py` validates all 20 corrected snippets
+against 200 cases using Java 11 and requires each buggy starter to fail at least one
+case before generating migration 14. Migration 13 is an initial seed: do not reapply
+it after the DEBUG upgrade. The frontend keeps one shared submit button: FIB/MCQ/Essay
+use a centered combined card, drag/drop uses sibling piece/slot columns, and DEBUG
+uses one editable snippet card. The coding-question layout is unchanged.
+
+## 200-question bank
+
+`db/11_expand_question_bank_to_200.sql` additively expands the Java bank from 20
+to 200 questions. Existing questions, testcase IDs and submission history are
+preserved. Each question has two public samples and eight hidden test cases.
+See [question-bank authoring and validation](db/bank200/README.md) for local
+validation, guarded database application and the generated inventory. Applying
+this migration stores the new questions without a frontend change. With migrations
+12–13 and the follow-up flow, only questions with complete enabled follow-up sets
+are eligible for candidate selection.
+
 ## AI-used marker review
 
 The private admin attempt response derives `aiMarkerDetected` from the exact saved

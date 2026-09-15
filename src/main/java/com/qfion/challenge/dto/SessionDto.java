@@ -10,8 +10,16 @@ public final class SessionDto {
         @NotBlank @Size(max=150) String fullName, @NotBlank @Email @Size(max=255) String email,
         @NotBlank @Size(min=7,max=32) String phone, @Size(max=255) String sourceCampaign) {}
     public record Access(@NotNull @Pattern(regexp="[0-9a-fA-F-]{36}") String token) {}
+    public record FollowupAnswer(@NotNull @Pattern(regexp="[0-9a-fA-F-]{36}") String token,
+        @Min(1) int ordinal, @Min(1) @Max(5) int followupOrdinal,
+        @NotNull @Size(max=10) java.util.List<@NotNull @Size(max=2000) String> answers,
+        @Size(max=100000) String sourceCode) {
+        public FollowupAnswer(String token,int ordinal,int followupOrdinal,java.util.List<String> answers) {
+            this(token,ordinal,followupOrdinal,answers,null);
+        }
+    }
     public record Answer(@NotNull @Pattern(regexp="[0-9a-fA-F-]{36}") String token,
-        @Min(1) int ordinal, @NotBlank @Size(max=100000) String sourceCode,
+        @Min(1) int ordinal, @NotNull @Size(max=100000) String sourceCode,
         @Valid Dto.EditorActivity editorActivity) {}
     public record Draft(@NotNull @Pattern(regexp="[0-9a-fA-F-]{36}") String token,
         @Min(1) int ordinal, @Min(1) @Max(100000) int revision,
@@ -19,5 +27,6 @@ public final class SessionDto {
     /** Never includes score, hidden tests, candidate details, or a bearer token. */
     public record State(String status, String reason, OffsetDateTime serverNow, OffsetDateTime startedAt,
         OffsetDateTime expiresAt, OffsetDateTime finishedAt, int submittedAnswers, int ordinal,
-        Dto.QuestionDetail question, String draftCode, int draftRevision, boolean restartAllowed) {}
+        Dto.QuestionDetail question, String draftCode, int draftRevision, boolean restartAllowed,
+        String phase, com.qfion.challenge.service.FollowupService.PublicQuestion followup) {}
 }

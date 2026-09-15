@@ -25,6 +25,7 @@ public class AdminStatsService {
     private final JdbcTemplate jdbc;
     private final ActivityCheckpointService checkpoints;
     private final CandidateRepo candidates;
+    private final FollowupService followups;
     private final org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate named;
 
     // Aggregate before classifying: every submission contributes, including repeated questions.
@@ -223,7 +224,7 @@ public class AdminStatsService {
                 + "WHERE a.id = ? AND a.candidate_id = ?", (rs, n) -> new AttemptDetail(summary(rs),
                         rs.getString("source_code"), rs.getString("prompt"), rs.getInt("difficulty"), rs.getInt("time_limit_seconds"),
                         rs.getString("starter_code"), rs.getString("reference_solution"), rs.getString("ip_address"),
-                        rs.getString("user_agent"), List.of(), EditorActivityCodec.decode(rs.getString("editor_activity_json")), null, null), attemptId, candidateId);
+                        rs.getString("user_agent"), List.of(), EditorActivityCodec.decode(rs.getString("editor_activity_json")), null, null, List.of()), attemptId, candidateId);
         if (rows.isEmpty()) throw notFound();
         var a = rows.get(0);
         var cases = jdbc.query("""
@@ -245,7 +246,7 @@ public class AdminStatsService {
                 rs.getObject("finished_at",OffsetDateTime.class),(Long)rs.getObject("session_elapsed_ms")),attemptId);
         var timing = timings.isEmpty() ? null : timings.get(0);
         return new AttemptDetail(a.summary(), a.sourceCode(), a.prompt(), a.difficulty(), timing == null ? a.timeLimitSeconds() : 600,
-                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases, a.editorActivity(), checkpoints.history(attemptId, a.sourceCode()), timing);
+                a.starterCode(), a.referenceSolution(), a.ipAddress(), a.userAgent(), cases, a.editorActivity(), checkpoints.history(attemptId, a.sourceCode()), timing, followups.review(attemptId));
     }
 
     private static AttemptSummary summary(ResultSet rs) throws SQLException {

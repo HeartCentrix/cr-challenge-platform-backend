@@ -1,0 +1,1292 @@
+{
+  "additional_questions": 180,
+  "total_questions": 200,
+  "validated_cases": 1800,
+  "original_questions_unchanged": [
+    "coin-change",
+    "container-with-most-water",
+    "course-schedule",
+    "decode-ways",
+    "edit-distance",
+    "jump-game",
+    "kth-largest-element",
+    "largest-rectangle-histogram",
+    "longest-increasing-subsequence",
+    "longest-palindromic-substring",
+    "maximum-circular-subarray",
+    "median-two-sorted-arrays",
+    "merge-intervals",
+    "minimum-window-substring",
+    "number-of-islands",
+    "search-rotated-sorted-array",
+    "sliding-window-maximum",
+    "subarray-sum-equals-k",
+    "trapping-rain-water",
+    "word-break"
+  ],
+  "java_release": 11,
+  "oracle": "Independent Python implementations compared with Java stdout tokens",
+  "migration_sha256": "749deaace077bd744108e13d9cc344099c7c7ff7355ca002decf5c91a6c26fa8",
+  "questions": [
+    {
+      "slug": "maximum-subarray-sum",
+      "title": "Maximum Subarray Sum",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "products-excluding-self",
+      "title": "Products Excluding Self",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rotate-array-right",
+      "title": "Rotate Array Right",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-array-inversions",
+      "title": "Count Array Inversions",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "strict-majority",
+      "title": "Strict Majority Element",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "first-missing-positive",
+      "title": "First Missing Positive",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-target-pairs",
+      "title": "Count Target Pairs",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "distinct-zero-sum-triplets",
+      "title": "Distinct Zero-Sum Triplets",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "leftmost-balance-index",
+      "title": "Leftmost Balance Index",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-product-subarray",
+      "title": "Maximum Product Subarray",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "shortest-target-sum-window",
+      "title": "Shortest Target Sum Window",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-consecutive-values",
+      "title": "Longest Consecutive Values",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "next-greater-value",
+      "title": "Next Greater Value",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "warmer-day-distance",
+      "title": "Warmer Day Distance",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "single-stock-trade",
+      "title": "Single Stock Trade",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "unlimited-stock-trades",
+      "title": "Unlimited Stock Trades",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-sortable-chunks",
+      "title": "Maximum Sortable Chunks",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "shortest-unsorted-segment",
+      "title": "Shortest Unsorted Segment",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "shortest-degree-segment",
+      "title": "Shortest Degree Segment",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "nearby-equal-values",
+      "title": "Nearby Equal Values",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximize-pair-minimums",
+      "title": "Maximize Pair Minimums",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "equalize-by-unit-moves",
+      "title": "Equalize by Unit Moves",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-sorted-gap",
+      "title": "Maximum Sorted Gap",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "sorted-squared-values",
+      "title": "Sorted Squared Values",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-wiggle-subsequence",
+      "title": "Longest Wiggle Subsequence",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-zero-sum-segment",
+      "title": "Longest Zero-Sum Segment",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-target-xor-segments",
+      "title": "Count Target XOR Segments",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-fixed-window-sum",
+      "title": "Maximum Fixed Window Sum",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "distinct-values-per-window",
+      "title": "Distinct Values per Window",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "smaller-values-to-right",
+      "title": "Smaller Values to the Right",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-unique-substring",
+      "title": "Longest Unique Substring",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "substring-at-most-k-distinct",
+      "title": "Substring with at Most K Distinct Characters",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-k-distinct-substrings",
+      "title": "Count K-Distinct Substrings",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "anagram-equivalence",
+      "title": "Anagram Equivalence",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "subsequence-membership",
+      "title": "Subsequence Membership",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "isomorphic-strings",
+      "title": "Isomorphic Strings",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "cyclic-string-rotation",
+      "title": "Cyclic String Rotation",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "letter-supply",
+      "title": "Letter Supply",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "anagram-window-starts",
+      "title": "Anagram Window Starts",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "overlapping-pattern-count",
+      "title": "Overlapping Pattern Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "smallest-repeating-unit",
+      "title": "Smallest Repeating Unit",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-proper-border",
+      "title": "Longest Proper Border",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "distinct-substring-count",
+      "title": "Distinct Substring Count",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "palindromic-substring-count",
+      "title": "Palindromic Substring Count",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "prepend-to-palindrome",
+      "title": "Prepend to Palindrome",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "cancel-adjacent-pairs",
+      "title": "Cancel Adjacent Pairs",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "run-length-encoding",
+      "title": "Run-Length Encoding",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "smallest-unique-subsequence",
+      "title": "Smallest Unique Subsequence",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "first-unique-character-index",
+      "title": "First Unique Character Index",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "independent-letter-partitions",
+      "title": "Independent Letter Partitions",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "equal-zero-one-substring",
+      "title": "Equal Zero-One Substring",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "monotone-binary-flips",
+      "title": "Monotone Binary Flips",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "add-binary-strings",
+      "title": "Add Binary Strings",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "remove-k-digits",
+      "title": "Remove K Digits",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "balanced-bracket-types",
+      "title": "Balanced Bracket Types",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-parenthesis-insertions",
+      "title": "Minimum Parenthesis Insertions",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-balanced-parenthesis-substring",
+      "title": "Longest Balanced Parenthesis Substring",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "wildcard-full-match",
+      "title": "Wildcard Full Match",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-palindrome-cuts",
+      "title": "Minimum Palindrome Cuts",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "equal-sum-partition",
+      "title": "Equal Sum Partition",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-partition-difference",
+      "title": "Minimum Partition Difference",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-target-subsets",
+      "title": "Count Target Subsets",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "target-sign-assignments",
+      "title": "Target Sign Assignments",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "nonadjacent-reward",
+      "title": "Nonadjacent Reward",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "circular-nonadjacent-reward",
+      "title": "Circular Nonadjacent Reward",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "stock-trades-with-cooldown",
+      "title": "Stock Trades with Cooldown",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "stock-trades-with-fee",
+      "title": "Stock Trades with Fee",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "at-most-two-stock-trades",
+      "title": "At Most Two Stock Trades",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-longest-increasing-subsequences",
+      "title": "Count Longest Increasing Subsequences",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-sum-increasing-subsequence",
+      "title": "Maximum Sum Increasing Subsequence",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-bitonic-subsequence",
+      "title": "Longest Bitonic Subsequence",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-common-subsequence",
+      "title": "Longest Common Subsequence",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "shortest-common-supersequence-length",
+      "title": "Shortest Common Supersequence Length",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-common-substring-length",
+      "title": "Longest Common Substring Length",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "distinct-subsequence-embeddings",
+      "title": "Distinct Subsequence Embeddings",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-insertions-palindrome",
+      "title": "Minimum Insertions to Palindrome",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "interleaving-strings",
+      "title": "Interleaving Strings",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "bounded-frog-jumps",
+      "title": "Bounded Frog Jumps",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-stair-cost",
+      "title": "Minimum Stair Cost",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "zero-one-knapsack",
+      "title": "Zero-One Knapsack",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "coin-combination-count",
+      "title": "Coin Combination Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rod-cutting-revenue",
+      "title": "Rod Cutting Revenue",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "matrix-chain-multiplication",
+      "title": "Matrix Chain Multiplication",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "burst-balloons-reward",
+      "title": "Burst Balloons Reward",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "optimal-end-picking-game",
+      "title": "Optimal End-Picking Game",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-egg-drop-trials",
+      "title": "Minimum Egg-Drop Trials",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "three-activity-schedule",
+      "title": "Three-Activity Schedule",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "weighted-job-scheduling",
+      "title": "Weighted Job Scheduling",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-perfect-squares",
+      "title": "Minimum Perfect Squares",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "undirected-component-count",
+      "title": "Undirected Component Count",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "source-reachable-count",
+      "title": "Source Reachable Count",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "unweighted-source-distances",
+      "title": "Unweighted Source Distances",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "bipartite-graph-check",
+      "title": "Bipartite Graph Check",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "undirected-cycle-check",
+      "title": "Undirected Cycle Check",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "bridge-edge-count",
+      "title": "Bridge Edge Count",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "articulation-vertex-count",
+      "title": "Articulation Vertex Count",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "lexicographic-topological-order",
+      "title": "Lexicographic Topological Order",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "strongly-connected-component-count",
+      "title": "Strongly Connected Component Count",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "universal-source-vertices",
+      "title": "Universal Source Vertices",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "eventually-safe-vertices",
+      "title": "Eventually Safe Vertices",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "undirected-triangle-count",
+      "title": "Undirected Triangle Count",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "euler-trail-existence",
+      "title": "Euler Trail Existence",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "hamiltonian-path-count",
+      "title": "Hamiltonian Path Count",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "weighted-source-shortest-paths",
+      "title": "Weighted Source Shortest Paths",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-spanning-tree-weight",
+      "title": "Minimum Spanning Tree Weight",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-spanning-tree-weight",
+      "title": "Maximum Spanning Tree Weight",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-bottleneck-path",
+      "title": "Minimum Bottleneck Path",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "widest-capacity-path",
+      "title": "Widest Capacity Path",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "tree-diameter-length",
+      "title": "Tree Diameter Length",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-height-tree-roots",
+      "title": "Minimum Height Tree Roots",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "tree-distance-sums",
+      "title": "Tree Distance Sums",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rooted-subtree-sizes",
+      "title": "Rooted Subtree Sizes",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "tree-maximum-independent-set",
+      "title": "Tree Maximum Independent Set",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "two-core-vertex-count",
+      "title": "Two-Core Vertex Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "matrix-transpose",
+      "title": "Matrix Transpose",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "spiral-matrix-order",
+      "title": "Spiral Matrix Order",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rotate-matrix-clockwise",
+      "title": "Rotate Matrix Clockwise",
+      "difficulty": 4,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-grid-path-sum",
+      "title": "Minimum Grid Path Sum",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "obstacle-grid-path-count",
+      "title": "Obstacle Grid Path Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "all-one-square-count",
+      "title": "All-One Square Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "largest-all-one-square-area",
+      "title": "Largest All-One Square Area",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "largest-all-one-rectangle",
+      "title": "Largest All-One Rectangle",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "largest-island-area",
+      "title": "Largest Island Area",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "total-land-perimeter",
+      "title": "Total Land Perimeter",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "enclosed-land-cell-count",
+      "title": "Enclosed Land Cell Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "shortest-four-way-grid-path",
+      "title": "Shortest Four-Way Grid Path",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "nearest-zero-distances",
+      "title": "Nearest Zero Distances",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rotting-oranges-minutes",
+      "title": "Rotting Oranges Minutes",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "longest-increasing-grid-path",
+      "title": "Longest Increasing Grid Path",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-dungeon-health",
+      "title": "Minimum Dungeon Health",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-falling-path-sum",
+      "title": "Minimum Falling Path Sum",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "zero-matrix-rows-and-columns",
+      "title": "Zero Matrix Rows and Columns",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-gold-path",
+      "title": "Maximum Gold Path",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "distinct-island-shapes",
+      "title": "Distinct Island Shapes",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-primes-up-to-n",
+      "title": "Count Primes up to N",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "nth-prime-number",
+      "title": "Nth Prime Number",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "prime-factor-multiset",
+      "title": "Prime Factor Multiset",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "euler-totient",
+      "title": "Euler Totient",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "summatory-totient",
+      "title": "Summatory Totient",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "positive-divisor-count",
+      "title": "Positive Divisor Count",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "positive-divisor-sum",
+      "title": "Positive Divisor Sum",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "factorial-trailing-zeros",
+      "title": "Factorial Trailing Zeros",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "binomial-coefficient-modulo",
+      "title": "Binomial Coefficient Modulo",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "balanced-parenthesis-sequence-count",
+      "title": "Balanced Parenthesis Sequence Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "derangement-count",
+      "title": "Derangement Count",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "modular-exponentiation",
+      "title": "Modular Exponentiation",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "modular-multiplicative-inverse",
+      "title": "Modular Multiplicative Inverse",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "two-congruence-reconstruction",
+      "title": "Two-Congruence Reconstruction",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "inclusive-range-bitwise-and",
+      "title": "Inclusive Range Bitwise AND",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "total-set-bits-through-n",
+      "title": "Total Set Bits through N",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "single-value-among-triples",
+      "title": "Single Value among Triples",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "sum-using-bitwise-operations",
+      "title": "Sum Using Bitwise Operations",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "integer-square-root",
+      "title": "Integer Square Root",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "happy-number-check",
+      "title": "Happy Number Check",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "kth-lexicographic-permutation",
+      "title": "Kth Lexicographic Permutation",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "josephus-survivor",
+      "title": "Josephus Survivor",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "factorial-zeros-in-base",
+      "title": "Factorial Zeros in a Base",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "count-decimal-ones",
+      "title": "Count Decimal Ones",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "large-index-fibonacci",
+      "title": "Large-Index Fibonacci",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "running-median-doubled",
+      "title": "Running Median Doubled",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "kth-smallest-pair-distance",
+      "title": "Kth Smallest Pair Distance",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "kth-multiplication-table-value",
+      "title": "Kth Multiplication Table Value",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimize-largest-partition-sum",
+      "title": "Minimize Largest Partition Sum",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-pile-eating-speed",
+      "title": "Minimum Pile Eating Speed",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximize-minimum-placement-gap",
+      "title": "Maximize Minimum Placement Gap",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-meeting-rooms",
+      "title": "Minimum Meeting Rooms",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "maximum-compatible-meetings",
+      "title": "Maximum Compatible Meetings",
+      "difficulty": 5,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "closed-interval-intersections",
+      "title": "Closed Interval Intersections",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "merge-k-sorted-sequences",
+      "title": "Merge K Sorted Sequences",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-rope-connection-cost",
+      "title": "Minimum Rope Connection Cost",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "task-scheduler-cooldown",
+      "title": "Task Scheduler Cooldown",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "circular-fuel-route",
+      "title": "Circular Fuel Route",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "minimum-rating-candies",
+      "title": "Minimum Rating Candies",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "queue-height-reconstruction",
+      "title": "Queue Height Reconstruction",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "building-skyline",
+      "title": "Building Skyline",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "convex-hull-doubled-area",
+      "title": "Convex Hull Doubled Area",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "closest-point-pair-squared-distance",
+      "title": "Closest Point Pair Squared Distance",
+      "difficulty": 6,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "rectangle-union-area",
+      "title": "Rectangle Union Area",
+      "difficulty": 8,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "dynamic-range-sums",
+      "title": "Dynamic Range Sums",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    },
+    {
+      "slug": "least-recently-used-cache",
+      "title": "Least Recently Used Cache",
+      "difficulty": 7,
+      "cases": 10,
+      "samples": 2
+    }
+  ]
+}

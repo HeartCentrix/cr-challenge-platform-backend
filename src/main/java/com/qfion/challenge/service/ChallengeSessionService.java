@@ -24,8 +24,9 @@ public class ChallengeSessionService {
     private final AttemptRepo attempts;
     private final IdentityService identities;
     private final CandidateRegionService regions;
+    private final FollowupService followups;
 
-    record Session(long id, long candidateId, OffsetDateTime started, OffsetDateTime expires, OffsetDateTime finished, String reason) {}
+    record Session(long id, long candidateId, OffsetDateTime started, OffsetDateTime expires, OffsetDateTime finished, String reason, int flowVersion) {}
     record Round(long id, long questionId, int ordinal, OffsetDateTime issued, String draft, String activity,
                  OffsetDateTime draftAt, int revision, Long attemptId) {}
 
@@ -51,10 +52,10 @@ public class ChallengeSessionService {
         else { candidate.setFullName(req.fullName()); candidate.setLastSeenAt(now); }
         candidate = candidates.saveAndFlush(candidate);
         long id = jdbc.queryForObject("""
-            INSERT INTO challenge_platform.challenge_session(token_hash,candidate_id,session_date,started_at,expires_at,ip_address,user_agent)
-            VALUES (?,?,?,?,?,?,?) RETURNING id
+            INSERT INTO challenge_platform.challenge_session(token_hash,candidate_id,session_date,started_at,expires_at,ip_address,user_agent,flow_version)
+            VALUES (?,?,?,?,?,?,?,2) RETURNING id
             """, Long.class, hash, candidate.getId(), today, now, now.plusMinutes(10), ip, userAgent);
-        var session = new Session(id, candidate.getId(), now, now.plusMinutes(10), null, null);
+        var session = new Session(id, candidate.getId(), now, now.plusMinutes(10), null, null, 2);
         if (!assign(session, now)) throw error(HttpStatus.SERVICE_UNAVAILABLE, "No challenge questions are currently available.");
         for (var identity : List.of(new String[]{"EMAIL", eh}, new String[]{"PHONE", ph})) {
             jdbc.update("INSERT INTO challenge_platform.daily_attempt_lock(identity_type,identity_hash,attempt_date,candidate_id,challenge_session_id,created_at) VALUES (?,?,?,?,?,?)",
@@ -83,8 +84,26 @@ public class ChallengeSessionService {
         if (round.attemptId() != null) return view(session, now); // Lost acknowledgement / double click: never regrade.
         if (latest(session.id()).ordinal() != round.ordinal()) throw error(HttpStatus.CONFLICT, "This question is no longer active.");
         queue(session, round, req.sourceCode(), EditorActivityCodec.encode(req.editorActivity(), question(round).getSlug()), now, ip, userAgent);
-        if (!assign(session, now)) session = finish(session, now, "ALL_QUESTIONS_SUBMITTED");
+        if (session.flowVersion()<2 && !assign(session, now)) session = finish(session, now, "ALL_QUESTIONS_SUBMITTED");
         return view(session, now());
+    }
+
+    @Transactional
+    public SessionDto.State followup(SessionDto.FollowupAnswer req) {
+        gate();
+        var session=lock(req.token());
+        var now=now();
+        if(session.finished()!=null)return view(session,now);
+        if(!now.isBefore(session.expires()))return view(finishExpired(session),now);
+        var r=round(session.id(),req.ordinal());
+        if(session.flowVersion()<2 || r.attemptId()==null)
+            throw error(HttpStatus.CONFLICT,"Submit the coding answer before its follow-ups.");
+        boolean saved=followups.answer(r.id(),req,now);
+        if(saved && followups.current(r.id())==null) {
+            if(latest(session.id()).ordinal()!=r.ordinal())throw error(HttpStatus.CONFLICT,"This question is no longer active.");
+            if(!assign(session,now))session=finish(session,now,"ALL_QUESTIONS_SUBMITTED");
+        }
+        return view(session,now());
     }
 
     @Transactional
@@ -133,11 +152,12 @@ public class ChallengeSessionService {
         var q = question(round);
         var cases = testcases.findByQuestionIdOrderByOrdinalAsc(q.getId());
         if (cases.isEmpty()) throw error(HttpStatus.SERVICE_UNAVAILABLE, "This question is unavailable.");
+        boolean skipped = source.isBlank() || (q.getStarterCode() != null && source.strip().equals(q.getStarterCode().strip()));
         var attempt = attempts.saveAndFlush(Attempt.builder().candidateId(session.candidateId()).questionId(q.getId())
             .submittedAt(receivedAt).durationMs(Math.max(0, Duration.between(round.issued(), receivedAt).toMillis()))
             .judgeLanguageId(q.getJudgeLanguageId()).sourceCode(source).editorActivityJson(activity)
             .testcasesPassed(0).testcasesTotal(cases.size()).score(BigDecimal.ZERO).speedBonus(BigDecimal.ZERO)
-            .judgeStatus("QUEUED").ipAddress(ip).userAgent(userAgent).build());
+            .judgeStatus(skipped ? "SKIPPED" : "QUEUED").ipAddress(ip).userAgent(userAgent).build());
         jdbc.update("UPDATE challenge_platform.attempt SET challenge_session_id=?,session_elapsed_ms=?,region_code=? WHERE id=?",
             session.id(), Math.max(0, Duration.between(session.started(), receivedAt).toMillis()), regions.resolve(ip), attempt.getId());
         jdbc.update("UPDATE challenge_platform.session_question SET attempt_id=?,draft_code=NULL,draft_activity=NULL WHERE id=?", attempt.getId(), round.id());
@@ -145,12 +165,13 @@ public class ChallengeSessionService {
     }
     private Session finish(Session session, OffsetDateTime at, String reason) {
         jdbc.update("UPDATE challenge_platform.challenge_session SET finished_at=?,finish_reason=? WHERE id=?", at, reason, session.id());
-        return new Session(session.id(), session.candidateId(), session.started(), session.expires(), at, reason);
+        return new Session(session.id(), session.candidateId(), session.started(), session.expires(), at, reason, session.flowVersion());
     }
     private boolean assign(Session session, OffsetDateTime at) {
-        var ids = jdbc.queryForList("SELECT q.id FROM challenge_platform.question q WHERE q.is_active AND NOT EXISTS (SELECT 1 FROM challenge_platform.session_question r WHERE r.session_id=? AND r.question_id=q.id) AND EXISTS (SELECT 1 FROM challenge_platform.question_testcase t WHERE t.question_id=q.id) ORDER BY random() LIMIT 1", Long.class, session.id());
+        var ids = jdbc.queryForList("SELECT q.id FROM challenge_platform.question q JOIN challenge_platform.followup_eligible_question e ON e.id=q.id WHERE q.is_active AND NOT EXISTS (SELECT 1 FROM challenge_platform.session_question r WHERE r.session_id=? AND r.question_id=q.id) AND EXISTS (SELECT 1 FROM challenge_platform.question_testcase t WHERE t.question_id=q.id) ORDER BY random() LIMIT 1", Long.class, session.id());
         if (ids.isEmpty()) return false;
         jdbc.update("INSERT INTO challenge_platform.session_question(session_id,question_id,ordinal,issued_at) SELECT ?,?,coalesce(max(ordinal),0)+1,? FROM challenge_platform.session_question WHERE session_id=?", session.id(), ids.get(0), at, session.id());
+        if(session.flowVersion()>=2)followups.snapshot(latest(session.id()).id());
         return true;
     }
     private SessionDto.State view(Session s, OffsetDateTime now) {
@@ -169,7 +190,9 @@ public class ChallengeSessionService {
         boolean restartAllowed = !active && jdbc.queryForObject(
                 "SELECT count(*) FROM challenge_platform.daily_attempt_lock WHERE candidate_id=? AND attempt_date=?",
                 Long.class, s.candidateId(), LocalDate.now()) == 0;
-        return new SessionDto.State(active ? "ACTIVE" : "FINISHED", s.reason(), now, s.started(), s.expires(), s.finished(), submitted, r.ordinal(), detail, active ? r.draft() : null, r.revision(), restartAllowed);
+        var followup=active && s.flowVersion()>=2 && r.attemptId()!=null?followups.current(r.id()):null;
+        return new SessionDto.State(active ? "ACTIVE" : "FINISHED", s.reason(), now, s.started(), s.expires(), s.finished(), submitted, r.ordinal(), detail, active ? r.draft() : null, r.revision(), restartAllowed,
+            !active?"FINISHED":followup!=null?"FOLLOW_UP":"CODING",followup);
     }
     private Session lock(String token) {
         var ids = jdbc.queryForList("SELECT id FROM challenge_platform.challenge_session WHERE token_hash=? FOR UPDATE", Long.class, ActivityCheckpointService.hashToken(token));
@@ -177,7 +200,7 @@ public class ChallengeSessionService {
         return load(ids.get(0));
     }
     private Session load(long id) {
-        return jdbc.queryForObject("SELECT * FROM challenge_platform.challenge_session WHERE id=?", (rs,n) -> new Session(rs.getLong("id"),rs.getLong("candidate_id"),rs.getObject("started_at",OffsetDateTime.class),rs.getObject("expires_at",OffsetDateTime.class),rs.getObject("finished_at",OffsetDateTime.class),rs.getString("finish_reason")), id);
+        return jdbc.queryForObject("SELECT * FROM challenge_platform.challenge_session WHERE id=?", (rs,n) -> new Session(rs.getLong("id"),rs.getLong("candidate_id"),rs.getObject("started_at",OffsetDateTime.class),rs.getObject("expires_at",OffsetDateTime.class),rs.getObject("finished_at",OffsetDateTime.class),rs.getString("finish_reason"),rs.getInt("flow_version")), id);
     }
     private Round latest(long id) { return rounds("SELECT * FROM challenge_platform.session_question WHERE session_id=? ORDER BY ordinal DESC LIMIT 1", id).get(0); }
     private Round round(long id, int ordinal) {
