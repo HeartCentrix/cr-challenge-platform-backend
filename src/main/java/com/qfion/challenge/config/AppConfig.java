@@ -25,7 +25,7 @@ public class AppConfig implements WebMvcConfigurer {
     @Bean
     public FilterRegistrationBean<CorsFilter> adminCorsFilter() {
         var cors = new CorsConfiguration();
-        cors.setAllowedOrigins(java.util.List.of("https://challenge.dev.codereport.com",
+        cors.setAllowedOrigins(java.util.List.of("https://challenge.codereport.com", "https://challenge.dev.codereport.com",
                 "http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:3000"));
         cors.setAllowedMethods(java.util.List.of("GET", "POST", "OPTIONS"));
         cors.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type"));
@@ -43,6 +43,7 @@ public class AppConfig implements WebMvcConfigurer {
         // from the public site as CORS requests even though they are same-origin to the user.
         registry.addMapping("/api/**")
                 .allowedOrigins(
+                        "https://challenge.codereport.com",
                         "https://challenge.dev.codereport.com",
                         "http://localhost:4200",
                         "http://127.0.0.1:4200",
